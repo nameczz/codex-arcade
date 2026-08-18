@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Codex Snake</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --forest: #123d32;
+      --forest-deep: #0b2a24;
+      --lime-a: #b9e35b;
+      --lime-b: #a9d64c;
+      --sky: #b9e5ff;
+      --cobalt: #3157c8;
+      --cobalt-dark: #2445a5;
+      --cream: #fffcef;
+      --ink: #17312a;
+      --purple: #775fe9;
+      --blue: #4f8ff5;
+      --shadow: 0 16px 38px rgba(4, 24, 19, .28);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: transparent; font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif; }
+    body { padding: 10px; color: var(--cream); }
+    button { font: inherit; }
+    .game-shell {
+      width: min(100%, 760px);
+      margin: 0 auto;
+      overflow: hidden;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 12% 2%, rgba(111, 212, 157, .22), transparent 28%),
+        linear-gradient(145deg, #174c3d 0%, var(--forest) 46%, var(--forest-deep) 100%);
+      border: 4px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow), inset 0 1px rgba(255,255,255,.18);
+      outline: none;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 16px 10px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .brand img {
+      width: 46px; height: 46px; border-radius: 15px; box-shadow: 0 6px 14px rgba(0,0,0,.22);
+      border: 2px solid rgba(255,255,255,.32); flex: none;
+    }
+    .brand h1 { margin: 0; font-size: clamp(19px, 4vw, 26px); letter-spacing: -.02em; line-height: 1; }
+    .brand p { margin: 5px 0 0; color: #b8e6d2; font-size: 12px; font-weight: 700; }
+    .stats { display: flex; gap: 8px; }
+    .score-pill {
+      min-width: 76px; padding: 7px 10px; border-radius: 16px; text-align: center;
+      color: var(--ink); background: #fff9d8; box-shadow: inset 0 -3px rgba(161,120,25,.12), 0 5px 12px rgba(0,0,0,.16);
+      font-weight: 900;
+    }
+    .score-pill .snake-mark { color: var(--purple); margin-right: 3px; }
+    .score-pill.best { background: #ffe375; }
+    .score-pill span { display: block; color: #64551d; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+    .score-pill strong { font-size: 19px; }
+    .main { display: grid; grid-template-columns: minmax(280px, 1fr) 194px; gap: 13px; padding: 0 14px 14px; align-items: start; }
+    .board-wrap {
+      position: relative; overflow: hidden; border-radius: 23px; padding: 9px;
+      background: rgba(0,0,0,.26); box-shadow: inset 0 2px 4px rgba(0,0,0,.3), 0 8px 20px rgba(0,0,0,.2);
+    }
+    canvas { display: block; width: 100%; aspect-ratio: 1; border-radius: 17px; touch-action: none; }
+    .overlay {
+      position: absolute; inset: 9px; display: grid; place-items: center; padding: 20px;
+      border-radius: 17px; background: rgba(9, 42, 33, .7); backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none; transition: opacity .18s ease;
+    }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+    .overlay-card {
+      width: min(90%, 300px); padding: 21px; border-radius: 22px; text-align: center;
+      color: var(--ink); background: var(--sky); border: 3px solid rgba(255,255,255,.65);
+      box-shadow: 0 12px 24px rgba(0,0,0,.25), inset 0 -5px rgba(38,125,173,.12);
+    }
+    .overlay-snake { font-size: 42px; filter: drop-shadow(0 4px 2px rgba(0,0,0,.12)); }
+    .overlay h2 { margin: 4px 0 7px; font-size: 24px; }
+    .overlay p { margin: 0 0 15px; font-size: 13px; font-weight: 700; color: #315267; }
+    .side { display: grid; gap: 10px; }
+    .tip-card {
+      position: relative; overflow: hidden; padding: 13px 13px 12px; border-radius: 18px;
+      background: var(--sky); color: #234455; font-size: 12px; font-weight: 750;
+      box-shadow: inset 0 -4px rgba(37,113,156,.12), 0 7px 16px rgba(0,0,0,.17);
+    }
+    .tip-card::after { content: "〰"; position: absolute; right: -3px; bottom: -17px; color: rgba(71,102,224,.22); font-size: 65px; transform: rotate(-18deg); }
+    .tip-card strong { display: block; margin-bottom: 4px; color: #173c50; font-size: 14px; }
+    .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .snake-button {
+      min-height: 42px; border: 0; border-radius: 13px; padding: 8px 9px;
+      color: white; background: linear-gradient(#3f67dc, var(--cobalt)); font-weight: 900; font-size: 12px;
+      box-shadow: inset 0 -4px rgba(11,31,104,.26), 0 5px 10px rgba(0,0,0,.2); cursor: pointer;
+      transition: transform .1s ease, filter .1s ease;
+    }
+    .snake-button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .snake-button:active { transform: translateY(2px); box-shadow: inset 0 -1px rgba(11,31,104,.26), 0 2px 5px rgba(0,0,0,.2); }
+    .snake-button:focus-visible { outline: 3px solid #ffe375; outline-offset: 2px; }
+    .snake-button.wide { grid-column: 1 / -1; }
+    .dpad { width: 154px; margin: 1px auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+    .dir {
+      position: relative; aspect-ratio: 1; border: 0; border-radius: 16px; color: white;
+      background: linear-gradient(145deg, #547bf0, #304fbd); box-shadow: inset 0 -5px rgba(8,28,98,.28), 0 5px 10px rgba(0,0,0,.2);
+      font-size: 20px; font-weight: 950; cursor: pointer; touch-action: manipulation;
+    }
+    .dir::before { content: ""; position: absolute; width: 11px; height: 11px; left: 7px; top: 7px; border-radius: 50%; background: #8c72f0; box-shadow: 7px 2px 0 #6a7ff0; }
+    .dir:active { transform: translateY(2px); }
+    .dir.up { grid-column: 2; }
+    .dir.left { grid-column: 1; grid-row: 2; }
+    .dir.down { grid-column: 2; grid-row: 2; }
+    .dir.right { grid-column: 3; grid-row: 2; }
+    .status { min-height: 19px; text-align: center; color: #bcebd7; font-size: 11px; font-weight: 750; }
+    .footer { padding: 0 16px 13px; text-align: center; color: #8fc4ad; font-size: 10px; }
+    @media (max-width: 610px) {
+      body { padding: 4px; }
+      .game-shell { border-radius: 22px; }
+      .topbar { align-items: flex-start; padding: 11px 11px 8px; }
+      .brand img { width: 40px; height: 40px; }
+      .brand p { display: none; }
+      .score-pill { min-width: 61px; padding: 5px 7px; }
+      .score-pill strong { font-size: 16px; }
+      .main { grid-template-columns: 1fr; padding: 0 9px 10px; gap: 9px; }
+      .side { grid-template-columns: 1fr 1fr; align-items: stretch; }
+      .tip-card { min-height: 98px; }
+      .controls { display: grid; align-content: center; }
+      .dpad { width: 142px; }
+      .button-row, .status { grid-column: 1 / -1; }
+      .footer { display: none; }
+    }
+    @media (max-width: 390px) {
+      .brand h1 { font-size: 17px; }
+      .stats { gap: 4px; }
+      .score-pill { min-width: 54px; padding-inline: 5px; }
+      .side { grid-template-columns: 1fr; }
+      .tip-card { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="game-shell" id="gameShell" tabindex="0" aria-label="Codex 贪吃蛇游戏">
+    <header class="topbar">
+      <div class="brand">
+        <img src="__SNAKE_ICON_DATA_URL__" alt="原创蓝紫贪吃蛇头像">
+        <div><h1>Codex Snake</h1><p>一条住在对话里的小蛇</p></div>
+      </div>
+      <div class="stats" aria-live="polite">
+        <div class="score-pill"><span><b class="snake-mark">〰</b>得分</span><strong id="score">0</strong></div>
+        <div class="score-pill best"><span>🏆 最佳</span><strong id="best">0</strong></div>
+      </div>
+    </header>
+    <section class="main">
+      <div class="board-wrap">
+        <canvas id="board" width="570" height="570" aria-label="贪吃蛇棋盘"></canvas>
+        <div class="overlay" id="overlay">
+          <div class="overlay-card">
+            <div class="overlay-snake" id="overlayIcon">🐍</div>
+            <h2 id="overlayTitle">绕成一团啦！</h2>
+            <p id="overlayText">按 R 或点击按钮，再来一局。</p>
+            <button class="snake-button wide" id="overlayAction">〰 再玩一次</button>
+          </div>
+        </div>
+      </div>
+      <aside class="side">
+        <div class="tip-card"><strong>🐍 小蛇提示</strong>方向键 / WASD 移动，空格暂停。吃掉红橙蛇莓，每颗得 10 分。</div>
+        <div class="controls" aria-label="触摸方向控制">
+          <div class="dpad">
+            <button class="dir up" data-direction="up" aria-label="向上">▲</button>
+            <button class="dir left" data-direction="left" aria-label="向左">◀</button>
+            <button class="dir down" data-direction="down" aria-label="向下">▼</button>
+            <button class="dir right" data-direction="right" aria-label="向右">▶</button>
+          </div>
+        </div>
+        <div class="button-row">
+          <button class="snake-button" id="pause">〰 暂停</button>
+          <button class="snake-button" id="restart">↻ 重开</button>
+          <button class="snake-button" id="pip">🐍 小窗</button>
+          <button class="snake-button" id="fullscreen">⤢ 全屏</button>
+        </div>
+        <div class="status" id="status" aria-live="polite">准备出发，别咬到自己。</div>
+      </aside>
+    </section>
+    <footer class="footer">所有图形与游戏素材均为本地原创绘制 · 无外部网络资源</footer>
+  </main>
+  <script>/*__GAME_CORE__*/</script>
+  <script>
+    (() => {
+      "use strict";
+      const { SnakeGame } = window.SnakeGameCore;
+      const game = new SnakeGame({ cols: 19, rows: 19 });
+      const shell = document.getElementById("gameShell");
+      const canvas = document.getElementById("board");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const bestEl = document.getElementById("best");
+      const pauseEl = document.getElementById("pause");
+      const overlay = document.getElementById("overlay");
+      const overlayTitle = document.getElementById("overlayTitle");
+      const overlayText = document.getElementById("overlayText");
+      const overlayIcon = document.getElementById("overlayIcon");
+      const statusEl = document.getElementById("status");
+      let best = readBest();
+      let timer = null;
+      let touchStart = null;
+
+      function hostApi() { return window.openai || {}; }
+      function readBest() {
+        const widgetBest = Number(hostApi().widgetState && hostApi().widgetState.bestScore);
+        if (Number.isFinite(widgetBest) && widgetBest >= 0) return widgetBest;
+        try { return Math.max(0, Number(localStorage.getItem("codex-snake-best")) || 0); } catch (_) { return 0; }
+      }
+      function saveBest() {
+        try { localStorage.setItem("codex-snake-best", String(best)); } catch (_) {}
+        const setWidgetState = hostApi().setWidgetState;
+        if (typeof setWidgetState === "function") Promise.resolve(setWidgetState({ bestScore: best })).catch(() => {});
+      }
+      function roundedRect(x, y, w, h, r) {
+        const rr = Math.min(r, w / 2, h / 2);
+        ctx.beginPath(); ctx.roundRect(x, y, w, h, rr);
+      }
+      function drawBoard() {
+        const state = game.snapshot();
+        const unit = canvas.width / state.cols;
+        for (let y = 0; y < state.rows; y += 1) {
+          for (let x = 0; x < state.cols; x += 1) {
+            ctx.fillStyle = (x + y) % 2 ? "#a9d64c" : "#b9e35b";
+            ctx.fillRect(x * unit, y * unit, unit + .5, unit + .5);
+          }
+        }
+        if (state.food) drawSnakeBerry(state.food.x, state.food.y, unit);
+        for (let i = state.snake.length - 1; i >= 0; i -= 1) drawSnakePart(state.snake[i], i, unit, state);
+      }
+      function drawSnakeBerry(x, y, u) {
+        const cx = (x + .5) * u, cy = (y + .54) * u;
+        ctx.save();
+        ctx.shadowColor = "rgba(70,25,25,.3)"; ctx.shadowBlur = u * .16; ctx.shadowOffsetY = u * .12;
+        const berry = ctx.createRadialGradient(cx - u*.12, cy - u*.2, u*.04, cx, cy, u*.4);
+        berry.addColorStop(0, "#ff8a46"); berry.addColorStop(1, "#e9413c");
+        ctx.fillStyle = berry; ctx.beginPath(); ctx.arc(cx, cy, u*.31, 0, Math.PI*2); ctx.fill();
+        ctx.shadowColor = "transparent";
+        ctx.strokeStyle = "#714dc9"; ctx.lineWidth = u*.11; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.arc(cx + u*.13, cy - u*.26, u*.18, Math.PI*.9, Math.PI*1.7); ctx.stroke();
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx - u*.12, cy - u*.12, u*.055, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+      function drawSnakePart(part, index, u, state) {
+        const pad = u * .06, x = part.x * u + pad, y = part.y * u + pad, size = u - pad*2;
+        ctx.save();
+        ctx.shadowColor = "rgba(41,32,109,.25)"; ctx.shadowBlur = u*.16; ctx.shadowOffsetY = u*.1;
+        const grad = ctx.createLinearGradient(x, y, x + size, y + size);
+        grad.addColorStop(0, index % 2 ? "#648ff5" : "#6b7cf0"); grad.addColorStop(1, index % 2 ? "#735ee8" : "#875ce1");
+        ctx.fillStyle = grad; roundedRect(x, y, size, size, u*.36); ctx.fill();
+        ctx.shadowColor = "transparent";
+        ctx.fillStyle = "rgba(255,255,255,.16)"; ctx.beginPath(); ctx.arc(x + size*.36, y + size*.28, size*.15, 0, Math.PI*2); ctx.fill();
+        if (index === 0) drawFace(part, u, state.direction);
+        ctx.restore();
+      }
+      function drawFace(head, u, dir) {
+        const cx = (head.x + .5) * u, cy = (head.y + .5) * u;
+        const sideX = dir.y ? u*.18 : 0, sideY = dir.x ? u*.18 : 0;
+        const forwardX = dir.x*u*.19, forwardY = dir.y*u*.19;
+        [[-sideX,-sideY],[sideX,sideY]].forEach(([sx,sy]) => {
+          const ex = cx+forwardX+sx, ey = cy+forwardY+sy;
+          ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(ex,ey,u*.155,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle="#142a31"; ctx.beginPath(); ctx.arc(ex+dir.x*u*.035,ey+dir.y*u*.035,u*.073,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(ex+dir.x*u*.05-u*.018,ey+dir.y*u*.05-u*.018,u*.021,0,Math.PI*2); ctx.fill();
+        });
+      }
+      function updateUi() {
+        scoreEl.textContent = String(game.score);
+        if (game.score > best) { best = game.score; saveBest(); }
+        bestEl.textContent = String(best);
+        pauseEl.textContent = game.paused ? "▶ 继续" : "〰 暂停";
+        if (game.gameOver) {
+          overlayIcon.textContent = game.food ? "🐍" : "🏆";
+          overlayTitle.textContent = game.food ? "绕成一团啦！" : "铺满棋盘！";
+          overlayText.textContent = `本局 ${game.score} 分 · 按 R 或点击按钮再来一局。`;
+          overlay.classList.add("show");
+          statusEl.textContent = game.score >= best && game.score > 0 ? "🏆 新的最佳成绩！" : "小蛇想再试一次。";
+        } else if (game.paused) {
+          overlayIcon.textContent = "💤"; overlayTitle.textContent = "小蛇打个盹"; overlayText.textContent = "按空格或点击继续。";
+          overlay.classList.add("show"); statusEl.textContent = "已暂停。";
+        } else { overlay.classList.remove("show"); }
+      }
+      function frame() { drawBoard(); updateUi(); }
+      function schedule() {
+        clearTimeout(timer);
+        if (game.gameOver) return;
+        const speed = Math.max(68, 145 - game.score * 1.2);
+        timer = setTimeout(() => { game.step(); frame(); schedule(); }, speed);
+      }
+      function turn(direction) { if (game.turn(direction)) { statusEl.textContent = "小蛇转弯啦。"; shell.focus({ preventScroll: true }); } }
+      function restart() { game.reset(); statusEl.textContent = "新的一局，出发！"; frame(); schedule(); shell.focus({ preventScroll: true }); }
+      function togglePause() { game.togglePause(); frame(); schedule(); shell.focus({ preventScroll: true }); }
+      async function requestMode(mode) {
+        const api = hostApi();
+        if (typeof api.requestDisplayMode !== "function") { statusEl.textContent = "当前 Codex 界面暂不支持切换显示模式。"; return; }
+        try {
+          const available = Array.isArray(api.availableDisplayModes) ? api.availableDisplayModes : null;
+          if (available && !available.includes(mode)) { statusEl.textContent = `当前界面不支持${mode === "fullscreen" ? "全屏" : "小窗"}。`; return; }
+          await api.requestDisplayMode({ mode });
+          statusEl.textContent = mode === "fullscreen" ? "已请求全屏模式。" : "已请求画中画模式。";
+        } catch (_) { statusEl.textContent = "显示模式切换未被当前界面接受。"; }
+      }
+      const keyDirection = { ArrowUp:"up", w:"up", W:"up", ArrowDown:"down", s:"down", S:"down", ArrowLeft:"left", a:"left", A:"left", ArrowRight:"right", d:"right", D:"right" };
+      document.addEventListener("keydown", (event) => {
+        if (keyDirection[event.key]) { event.preventDefault(); turn(keyDirection[event.key]); return; }
+        if (event.code === "Space") { event.preventDefault(); togglePause(); }
+        if (event.key === "r" || event.key === "R") { event.preventDefault(); restart(); }
+      });
+      document.querySelectorAll("[data-direction]").forEach((button) => button.addEventListener("pointerdown", (event) => { event.preventDefault(); turn(button.dataset.direction); }));
+      document.getElementById("pause").addEventListener("click", togglePause);
+      document.getElementById("restart").addEventListener("click", restart);
+      document.getElementById("overlayAction").addEventListener("click", () => game.gameOver ? restart() : togglePause());
+      document.getElementById("pip").addEventListener("click", () => requestMode("pip"));
+      document.getElementById("fullscreen").addEventListener("click", () => requestMode("fullscreen"));
+      canvas.addEventListener("pointerdown", (event) => { touchStart = { x:event.clientX, y:event.clientY }; });
+      canvas.addEventListener("pointerup", (event) => {
+        if (!touchStart) return;
+        const dx = event.clientX-touchStart.x, dy = event.clientY-touchStart.y; touchStart = null;
+        if (Math.max(Math.abs(dx),Math.abs(dy)) < 18) return;
+        turn(Math.abs(dx)>Math.abs(dy) ? (dx>0?"right":"left") : (dy>0?"down":"up"));
+      });
+      frame(); schedule(); setTimeout(() => shell.focus({ preventScroll: true }), 100);
+    })();
+  </script>
+</body>
+</html>

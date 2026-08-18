@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Codex Brick Breaker</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #070915;
+      --panel: #101427;
+      --line: #29304d;
+      --paper: #eef4ff;
+      --muted: #95a0bd;
+      --blue: #376cff;
+      --coral: #ff6c68;
+      --gold: #ffc247;
+      --mint: #52ddb0;
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; background: transparent; }
+    body { padding: 8px; color: var(--paper); font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace; }
+    button { font: inherit; }
+    .cabinet {
+      width: min(100%, 720px); margin: 0 auto; overflow: hidden; border: 1px solid #343b5e; border-radius: 22px;
+      background: #090b17; box-shadow: 0 20px 58px rgba(0,0,0,.52), inset 0 1px rgba(255,255,255,.06);
+      outline: none; position: relative;
+    }
+    .cabinet::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .18; z-index: 3;
+      background-image: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.035) 3px 4px);
+      mix-blend-mode: soft-light;
+    }
+    .screen { position: relative; background: #050711; }
+    canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; touch-action: none; cursor: none; }
+    .top-tools {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 12px;
+      background: #101426; border-top: 1px solid #252b47; border-bottom: 1px solid #050711;
+    }
+    .brand { display: flex; align-items: center; min-width: 0; gap: 9px; }
+    .brand img { width: 31px; height: 31px; border-radius: 9px; box-shadow: 0 0 16px rgba(55,108,255,.35); }
+    .brand strong { display: block; color: #f6f8ff; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .brand span { display: block; margin-top: 2px; color: #77829f; font-size: 9px; letter-spacing: .08em; }
+    .modes { display: flex; gap: 6px; }
+    .mini {
+      min-width: 42px; height: 31px; border: 1px solid #343d62; border-radius: 8px; color: #c5cee6; background: #171c32;
+      cursor: pointer; box-shadow: inset 0 -2px rgba(0,0,0,.25);
+    }
+    .mini:hover { border-color: #5c6da6; color: white; }
+    .mini:focus-visible, .control:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .deck { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; padding: 11px 12px 13px; background: #0c0f1d; }
+    .hint { color: #808ba9; font-size: 9px; line-height: 1.5; letter-spacing: .03em; }
+    .hint.right { text-align: right; }
+    .touch { display: flex; gap: 8px; justify-content: center; }
+    .control {
+      min-width: 66px; height: 48px; padding: 0 12px; border: 1px solid #3a446c; border-radius: 12px; color: #edf3ff;
+      background: linear-gradient(#1c2340, #11162a); box-shadow: inset 0 -4px rgba(0,0,0,.3), 0 5px 12px rgba(0,0,0,.25);
+      font-weight: 900; cursor: pointer; touch-action: none; user-select: none;
+    }
+    .control.launch { min-width: 86px; color: #111629; border-color: #f1bf49; background: linear-gradient(#ffd36a, #f0ae2d); }
+    .control:active, .control.active { transform: translateY(2px); box-shadow: inset 0 -1px rgba(0,0,0,.3), 0 2px 5px rgba(0,0,0,.25); }
+    .status { padding: 0 12px 11px; color: #6f7a98; background: #0c0f1d; text-align: center; font-size: 9px; min-height: 20px; }
+    @media (max-width: 520px) {
+      body { padding: 3px; }
+      .cabinet { border-radius: 15px; }
+      .top-tools { padding: 7px 8px; }
+      .brand span { display: none; }
+      .deck { grid-template-columns: 1fr; padding: 9px 8px 10px; }
+      .hint { display: none; }
+      .touch { width: 100%; }
+      .control { flex: 1; min-width: 0; height: 46px; }
+      .status { padding-bottom: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="cabinet" id="cabinet" tabindex="0" aria-label="Codex 打砖块游戏">
+    <section class="screen"><canvas id="game" width="720" height="900" aria-label="打砖块游戏区域"></canvas></section>
+    <header class="top-tools">
+      <div class="brand">
+        <img src="__BRICK_ICON_DATA_URL__" alt="Codex Neon Workshop 原创游戏图标">
+        <div><strong>Codex Neon Workshop</strong><span>ORIGINAL LOCAL ARCADE · NO REMOTE ASSETS</span></div>
+      </div>
+      <div class="modes">
+        <button class="mini" id="restart" aria-label="重新开始">R ↻</button>
+        <button class="mini" id="pip" aria-label="画中画">▣</button>
+        <button class="mini" id="fullscreen" aria-label="全屏">⛶</button>
+      </div>
+    </header>
+    <section class="deck" aria-label="触摸控制">
+      <div class="hint">← → / A D 移动<br>鼠标、触摸拖动挡板</div>
+      <div class="touch">
+        <button class="control" data-move="-1" aria-label="向左移动">◀</button>
+        <button class="control launch" id="action" aria-label="发射或暂停">SPACE</button>
+        <button class="control" data-move="1" aria-label="向右移动">▶</button>
+      </div>
+      <div class="hint right">SPACE 发射 / 暂停<br>R 重开 · 三条命</div>
+    </section>
+    <div class="status" id="status" aria-live="polite">移动挡板，按 SPACE 发射。</div>
+  </main>
+  <script>/*__GAME_CORE__*/</script>
+  <script>
+    (() => {
+      "use strict";
+      const { BrickBreakerGame, WIDTH, HEIGHT } = window.BrickBreakerCore;
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const cabinet = document.getElementById("cabinet");
+      const action = document.getElementById("action");
+      const status = document.getElementById("status");
+      const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const game = new BrickBreakerGame({ bestScore: readBest() });
+      const particles = [];
+      const popups = [];
+      let held = 0;
+      let lastTime = performance.now();
+      let pointerActive = false;
+      let lastSavedBest = game.bestScore;
+
+      function hostApi() { return window.openai || {}; }
+      function readBest() {
+        const hostBest = Number(hostApi().widgetState && hostApi().widgetState.bestScore);
+        if (Number.isFinite(hostBest) && hostBest >= 0) return hostBest;
+        try { return Math.max(0, Number(localStorage.getItem("codex-brick-breaker-best")) || 0); } catch (_) { return 0; }
+      }
+      function saveBest() {
+        if (game.bestScore === lastSavedBest) return;
+        lastSavedBest = game.bestScore;
+        try { localStorage.setItem("codex-brick-breaker-best", String(game.bestScore)); } catch (_) {}
+        const setter = hostApi().setWidgetState;
+        if (typeof setter === "function") Promise.resolve(setter({ bestScore: game.bestScore })).catch(() => {});
+      }
+      function rounded(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+      function label(text, x, y, size, color, align = "left", weight = 800) {
+        ctx.font = `${weight} ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+        ctx.textAlign = align; ctx.textBaseline = "middle"; ctx.fillStyle = color; ctx.fillText(text, x, y);
+      }
+      function drawBackground(t) {
+        const sky = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+        sky.addColorStop(0, "#0f1326"); sky.addColorStop(.52, "#090c18"); sky.addColorStop(1, "#050711");
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        ctx.save(); ctx.globalAlpha = .18; ctx.strokeStyle = "#33406e"; ctx.lineWidth = 1;
+        for (let x = 24; x < WIDTH; x += 34) { ctx.beginPath(); ctx.moveTo(x, 108); ctx.lineTo(x, HEIGHT); ctx.stroke(); }
+        for (let y = 120; y < HEIGHT; y += 34) { ctx.beginPath(); ctx.moveTo(14, y); ctx.lineTo(WIDTH - 14, y); ctx.stroke(); }
+        ctx.restore();
+        const glow = ctx.createRadialGradient(WIDTH / 2, 310, 10, WIDTH / 2, 310, 430);
+        glow.addColorStop(0, "rgba(55,108,255,.12)"); glow.addColorStop(1, "rgba(55,108,255,0)");
+        ctx.fillStyle = glow; ctx.fillRect(0, 100, WIDTH, 650);
+        ctx.strokeStyle = "#202744"; ctx.lineWidth = 2; rounded(14, 108, WIDTH - 28, HEIGHT - 123, 15); ctx.stroke();
+        if (!reduceMotion) {
+          ctx.fillStyle = `rgba(255,255,255,${.018 + Math.sin(t / 1100) * .006})`;
+          for (let y = 116; y < HEIGHT; y += 4) ctx.fillRect(14, y, WIDTH - 28, 1);
+        }
+      }
+      function drawHud(state) {
+        ctx.fillStyle = "#090c18"; ctx.fillRect(0, 0, WIDTH, 108);
+        ctx.strokeStyle = "#252c4a"; ctx.beginPath(); ctx.moveTo(18, 107); ctx.lineTo(WIDTH - 18, 107); ctx.stroke();
+        label("SCORE", 26, 25, 13, "#737f9f");
+        label(String(state.score).padStart(5, "0"), 26, 62, 34, "#f4f7ff", "left", 900);
+        label("BEST", WIDTH / 2, 25, 13, "#737f9f", "center");
+        label(String(state.bestScore).padStart(5, "0"), WIDTH / 2, 58, 22, "#ffc247", "center", 900);
+        label(`LV ${String(state.level + 1).padStart(2, "0")}`, WIDTH - 26, 25, 13, "#737f9f", "right");
+        for (let i = 0; i < 3; i += 1) {
+          const x = WIDTH - 26 - i * 29, y = 61;
+          ctx.save(); ctx.globalAlpha = i < state.lives ? 1 : .18; ctx.shadowColor = "#ff6c68"; ctx.shadowBlur = i < state.lives ? 10 : 0;
+          ctx.fillStyle = "#ff6c68"; ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        }
+      }
+      function drawBricks(state) {
+        for (const brick of state.bricks) {
+          if (!brick.alive) continue;
+          ctx.save();
+          ctx.shadowColor = brick.color; ctx.shadowBlur = brick.special ? 18 : 10;
+          const grad = ctx.createLinearGradient(brick.x, brick.y, brick.x, brick.y + brick.h);
+          grad.addColorStop(0, brick.color); grad.addColorStop(1, shade(brick.color, -.24));
+          ctx.fillStyle = grad; rounded(brick.x, brick.y, brick.w, brick.h, 8); ctx.fill();
+          ctx.shadowBlur = 0; ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 1; rounded(brick.x + .5, brick.y + .5, brick.w - 1, brick.h - 1, 8); ctx.stroke();
+          ctx.fillStyle = "rgba(255,255,255,.22)"; rounded(brick.x + 7, brick.y + 5, brick.w - 14, 4, 2); ctx.fill();
+          if (brick.special) {
+            ctx.globalAlpha = brick.hits === 2 ? .82 : .42; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
+            for (let x = brick.x + 12; x < brick.x + brick.w - 4; x += 14) { ctx.beginPath(); ctx.moveTo(x, brick.y + 13); ctx.lineTo(x + 8, brick.y + 21); ctx.stroke(); }
+          }
+          ctx.restore();
+        }
+      }
+      function shade(hex, amount) {
+        const n = parseInt(hex.slice(1), 16); const f = amount < 0 ? 0 : 255; const p = Math.abs(amount);
+        const r = n >> 16, g = n >> 8 & 255, b = n & 255;
+        return `rgb(${Math.round((f-r)*p+r)},${Math.round((f-g)*p+g)},${Math.round((f-b)*p+b)})`;
+      }
+      function drawPaddle(state) {
+        const p = state.paddle;
+        ctx.save(); ctx.shadowColor = "#6f8fff"; ctx.shadowBlur = 18;
+        const grad = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+        grad.addColorStop(0, "#fff"); grad.addColorStop(.48, "#dce7ff"); grad.addColorStop(1, "#8195c9");
+        ctx.fillStyle = grad; rounded(p.x, p.y, p.w, p.h, 8); ctx.fill();
+        ctx.shadowBlur = 0; ctx.fillStyle = "#376cff"; rounded(p.x + 11, p.y + 5, p.w - 22, 3, 2); ctx.fill(); ctx.restore();
+      }
+      function drawBall(state) {
+        const b = state.ball;
+        ctx.save(); ctx.shadowColor = "#dbe7ff"; ctx.shadowBlur = 18;
+        const orb = ctx.createRadialGradient(b.x - 3, b.y - 4, 1, b.x, b.y, b.r + 2);
+        orb.addColorStop(0, "#fff"); orb.addColorStop(.42, "#e9f0ff"); orb.addColorStop(1, "#87a3e8");
+        ctx.fillStyle = orb; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0; ctx.fillStyle = "#17213d"; ctx.beginPath(); ctx.arc(b.x - 2.6, b.y - .4, 1.2, 0, Math.PI * 2); ctx.arc(b.x + 2.6, b.y - .4, 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#52668d"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(b.x, b.y + 2, 2.4, .15, Math.PI - .15); ctx.stroke(); ctx.restore();
+      }
+      function spawnBurst(event) {
+        if (reduceMotion) return;
+        for (let i = 0; i < 9; i += 1) particles.push({ x: event.x, y: event.y, vx: (Math.random() - .5) * 210, vy: (Math.random() - .8) * 190, life: .62, max: .62, color: event.color });
+        popups.push({ x: event.x, y: event.y - 4, text: `+${event.points}${event.combo >= 4 ? `  x${event.combo}` : ""}`, life: .75 });
+      }
+      function updateEffects(dt) {
+        for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 360 * dt; p.life -= dt; }
+        for (const p of popups) { p.y -= 42 * dt; p.life -= dt; }
+        while (particles.length && particles[0].life <= 0) particles.shift();
+        while (popups.length && popups[0].life <= 0) popups.shift();
+      }
+      function drawEffects() {
+        for (const p of particles) { ctx.globalAlpha = Math.max(0, p.life / p.max); ctx.fillStyle = p.color; ctx.fillRect(p.x - 3, p.y - 3, 6, 6); }
+        ctx.globalAlpha = 1;
+        for (const p of popups) { ctx.globalAlpha = Math.min(1, p.life * 2); label(p.text, p.x, p.y, 14, "#fff", "center", 900); }
+        ctx.globalAlpha = 1;
+      }
+      function drawOverlay(state) {
+        let title = "", subtitle = "", accent = "#376cff";
+        if (state.gameOver) { title = "WORKSHOP CLOSED"; subtitle = `FINAL ${String(state.score).padStart(5,"0")} · PRESS R TO REBOOT`; accent = "#ff6c68"; }
+        else if (state.wonLevel) { title = "STAGE CLEARED"; subtitle = `BONUS SECURED · SPACE FOR LEVEL ${state.level + 2}`; accent = "#52ddb0"; }
+        else if (state.paused) { title = "SYSTEM PAUSED"; subtitle = "PRESS SPACE TO RESUME"; accent = "#ffc247"; }
+        else if (state.ball.stuck) { title = state.lives < 3 ? "ORB RECOVERED" : "READY TO BREAK"; subtitle = "SPACE TO LAUNCH"; accent = "#376cff"; }
+        if (!title) return;
+        ctx.save(); ctx.fillStyle = "rgba(4,6,14,.62)"; ctx.fillRect(14, 108, WIDTH - 28, HEIGHT - 123);
+        ctx.shadowColor = accent; ctx.shadowBlur = 28; ctx.fillStyle = "rgba(12,16,31,.94)"; rounded(102, 522, WIDTH - 204, 132, 17); ctx.fill();
+        ctx.shadowBlur = 0; ctx.strokeStyle = accent; ctx.lineWidth = 2; rounded(102, 522, WIDTH - 204, 132, 17); ctx.stroke();
+        label(title, WIDTH / 2, 562, 28, "#f4f7ff", "center", 900); label(subtitle, WIDTH / 2, 611, 12, accent, "center", 800); ctx.restore();
+      }
+      function render(t) {
+        const state = game.snapshot(); drawBackground(t); drawHud(state); drawBricks(state); drawPaddle(state); drawBall(state); drawEffects(); drawOverlay(state);
+      }
+      function setPointer(event) {
+        const rect = canvas.getBoundingClientRect(); game.setPaddleCenter((event.clientX - rect.left) * WIDTH / rect.width); cabinet.focus({ preventScroll: true });
+      }
+      function doAction() {
+        if (game.gameOver) game.reset(); else if (game.wonLevel) game.nextLevel(); else game.spaceAction();
+        status.textContent = game.paused ? "已暂停。按 SPACE 继续。" : game.ball.stuck ? "移动挡板，按 SPACE 发射。" : "Neon Workshop 运转中。";
+        cabinet.focus({ preventScroll: true });
+      }
+      function restart() { game.reset(); particles.length = 0; popups.length = 0; status.textContent = "全新一局。移动挡板，按 SPACE 发射。"; cabinet.focus({ preventScroll: true }); }
+      async function requestMode(mode) {
+        const api = hostApi();
+        if (typeof api.requestDisplayMode !== "function") { status.textContent = "当前 Codex 界面暂不支持切换显示模式。"; return; }
+        try {
+          const available = Array.isArray(api.availableDisplayModes) ? api.availableDisplayModes : null;
+          if (available && !available.includes(mode)) { status.textContent = `当前界面不支持${mode === "fullscreen" ? "全屏" : "画中画"}。`; return; }
+          await api.requestDisplayMode({ mode }); status.textContent = mode === "fullscreen" ? "已请求全屏。" : "已请求画中画。";
+        } catch (_) { status.textContent = "显示模式切换未被当前界面接受。"; }
+      }
+      function loop(now) {
+        const dt = Math.min(.05, (now - lastTime) / 1000); lastTime = now;
+        if (held) game.movePaddle(held, dt);
+        const state = game.update(dt);
+        for (const event of state.events) {
+          if (event.type === "brick") spawnBurst(event);
+          if (event.type === "life-lost") status.textContent = event.lives ? `能量球掉落，还剩 ${event.lives} 条命。` : "本局结束，按 R 重新开始。";
+          if (event.type === "level-clear") status.textContent = `第 ${event.level} 关清空！按 SPACE 继续。`;
+        }
+        updateEffects(dt); saveBest(); render(now); requestAnimationFrame(loop);
+      }
+      document.addEventListener("keydown", (event) => {
+        if (["ArrowLeft","ArrowRight","Space"].includes(event.code)) event.preventDefault();
+        if (event.code === "ArrowLeft" || event.key === "a" || event.key === "A") held = -1;
+        if (event.code === "ArrowRight" || event.key === "d" || event.key === "D") held = 1;
+        if (event.code === "Space" && !event.repeat) doAction();
+        if ((event.key === "r" || event.key === "R") && !event.repeat) restart();
+      });
+      document.addEventListener("keyup", (event) => {
+        if ((event.code === "ArrowLeft" || event.key === "a" || event.key === "A") && held < 0) held = 0;
+        if ((event.code === "ArrowRight" || event.key === "d" || event.key === "D") && held > 0) held = 0;
+      });
+      canvas.addEventListener("pointerdown", (event) => { pointerActive = true; canvas.setPointerCapture(event.pointerId); setPointer(event); });
+      canvas.addEventListener("pointermove", (event) => { if (pointerActive || event.pointerType === "mouse") setPointer(event); });
+      canvas.addEventListener("pointerup", () => { pointerActive = false; });
+      document.querySelectorAll("[data-move]").forEach((button) => {
+        const start = (event) => { event.preventDefault(); held = Number(button.dataset.move); button.classList.add("active"); cabinet.focus({ preventScroll: true }); };
+        const stop = () => { held = 0; button.classList.remove("active"); };
+        button.addEventListener("pointerdown", start); button.addEventListener("pointerup", stop); button.addEventListener("pointercancel", stop); button.addEventListener("pointerleave", stop);
+      });
+      action.addEventListener("click", doAction);
+      document.getElementById("restart").addEventListener("click", restart);
+      document.getElementById("pip").addEventListener("click", () => requestMode("pip"));
+      document.getElementById("fullscreen").addEventListener("click", () => requestMode("fullscreen"));
+      render(performance.now()); requestAnimationFrame(loop); setTimeout(() => cabinet.focus({ preventScroll: true }), 100);
+    })();
+  </script>
+</body>
+</html>

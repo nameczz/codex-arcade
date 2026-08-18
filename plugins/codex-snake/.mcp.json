@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "codexSnake": {
+      "title": "Codex Snake",
+      "description": "Open a friendly, fully playable Snake game inside Codex.",
+      "icons": [
+        {
+          "src": "./assets/icon.png",
+          "mimeType": "image/png",
+          "sizes": ["64x64"]
+        },
+        {
+          "src": "./assets/logo.png",
+          "mimeType": "image/png",
+          "sizes": ["512x512"]
+        }
+      ],
+      "cwd": ".",
+      "command": "node",
+      "args": ["./mcp/server.cjs", "--stdio"]
+    }
+  }
+}

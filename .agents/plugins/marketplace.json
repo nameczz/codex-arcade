@@ -1,0 +1,32 @@
+{
+  "name": "codex-arcade",
+  "interface": {
+    "displayName": "Codex Arcade"
+  },
+  "plugins": [
+    {
+      "name": "codex-brick-breaker",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-brick-breaker"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Entertainment"
+    },
+    {
+      "name": "codex-snake",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-snake"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Entertainment"
+    }
+  ]
+}

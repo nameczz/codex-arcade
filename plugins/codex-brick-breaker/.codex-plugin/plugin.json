@@ -1,0 +1,25 @@
+{
+  "name": "codex-brick-breaker",
+  "version": "0.1.0",
+  "description": "A polished, fully playable original Brick Breaker game for Codex.",
+  "author": { "name": "Codex Arcade" },
+  "license": "MIT",
+  "keywords": ["brick-breaker", "breakout", "game", "打砖块", "interactive"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex Brick Breaker",
+    "shortDescription": "在 Codex 里打开原创霓虹打砖块。",
+    "longDescription": "Codex Neon Workshop is a dependency-free Brick Breaker game with three lives, multiple layouts, score persistence, keyboard, pointer and touch controls, plus supported inline, picture-in-picture and fullscreen display modes.",
+    "developerName": "Codex Arcade",
+    "category": "Entertainment",
+    "capabilities": ["Interactive"],
+    "defaultPrompt": ["打开打砖块", "玩一局打砖块", "Start Brick Breaker"],
+    "brandColor": "#376CFF",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png",
+    "logoDark": "./assets/logo-dark.png",
+    "screenshots": ["./assets/screenshot.png"]
+  },
+  "mcpServers": "./.mcp.json",
+  "apps": "./.app.json"
+}

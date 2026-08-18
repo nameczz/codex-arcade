@@ -1,0 +1,31 @@
+{
+  "name": "codex-snake",
+  "version": "0.1.0",
+  "description": "A cheerful, fully playable Snake game for Codex.",
+  "author": {
+    "name": "Local Codex Playground"
+  },
+  "license": "MIT",
+  "keywords": ["snake", "game", "贪吃蛇", "interactive"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex Snake",
+    "shortDescription": "在 Codex 里打开一局原创贪吃蛇。",
+    "longDescription": "A local, keyboard-and-touch friendly Snake game with pause, restart, score keeping, best-score persistence, and inline, picture-in-picture, or fullscreen display controls when the host supports them.",
+    "developerName": "Local Codex Playground",
+    "category": "Entertainment",
+    "capabilities": ["Interactive"],
+    "defaultPrompt": [
+      "打开贪吃蛇",
+      "玩一局贪吃蛇",
+      "Start the Snake game"
+    ],
+    "brandColor": "#3157C8",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png",
+    "logoDark": "./assets/logo-dark.png",
+    "screenshots": ["./assets/screenshot.png"]
+  },
+  "mcpServers": "./.mcp.json",
+  "apps": "./.app.json"
+}

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "codexBrickBreaker": {
+      "title": "Codex Brick Breaker",
+      "description": "Open the original Codex Neon Workshop Brick Breaker game.",
+      "icons": [
+        { "src": "./assets/icon.png", "mimeType": "image/png", "sizes": ["64x64"] },
+        { "src": "./assets/logo.png", "mimeType": "image/png", "sizes": ["512x512"] }
+      ],
+      "cwd": ".",
+      "command": "node",
+      "args": ["./mcp/server.cjs", "--stdio"]
+    }
+  }
+}
