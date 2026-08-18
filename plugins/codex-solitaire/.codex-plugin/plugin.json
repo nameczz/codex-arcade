@@ -1,6 +1,6 @@
 {
   "name": "codex-solitaire",
-  "version": "0.1.0+codex.20260818112445",
+  "version": "0.1.2+codex.20260819002135",
   "description": "A complete, polished draw-one Klondike Solitaire game for Codex.",
   "author": {
     "name": "Codex Arcade"

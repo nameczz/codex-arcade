@@ -18,7 +18,9 @@ test("serves self-contained MCP App HTML", async () => {
   assert.equal(resource.mimeType, "text/html;profile=mcp-app");
   assert.match(resource.text, /Codex Neon Workshop/);
   assert.match(resource.text, /class BrickBreakerGame/);
-  assert.doesNotMatch(resource.text, /__BRICK_ICON_DATA_URL__|__GAME_CORE__/);
+  assert.match(resource.text, /id="close"/);
+  assert.match(resource.text, /ui\/notifications\/request-teardown/);
+  assert.doesNotMatch(resource.text, /__BRICK_ICON_DATA_URL__|__GAME_CORE__|__GAME_UI__/);
   assert.doesNotMatch(resource.text, /<(?:script|link|img)[^>]+(?:src|href)=["']https?:\/\//i);
 });
 

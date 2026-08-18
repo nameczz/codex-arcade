@@ -40,8 +40,10 @@ function resourceMeta() {
 function gameHtml() {
   const template = fs.readFileSync(path.join(__dirname, "game.html"), "utf8");
   const core = fs.readFileSync(path.join(__dirname, "game-core.js"), "utf8");
+  const ui = fs.readFileSync(path.join(__dirname, "game-ui.js"), "utf8");
   return template
     .replace("/*__GAME_CORE__*/", core)
+    .replace("/*__GAME_UI__*/", ui)
     .replace("__SNAKE_ICON_DATA_URL__", assetDataUrl("icon.png", "image/png"));
 }
 

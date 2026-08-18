@@ -33,8 +33,9 @@ function resourceMeta() {
 function gameHtml() {
   const template = fs.readFileSync(path.join(__dirname, "game.html"), "utf8");
   const core = fs.readFileSync(path.join(__dirname, "game-core.js"), "utf8");
+  const ui = fs.readFileSync(path.join(__dirname, "game-ui.js"), "utf8");
   const cardBack = assetDataUrl("gpt-knot-card-back.png", "image/png");
-  return template.replace("/*__SOLITAIRE_CORE__*/", core).replaceAll("__CARD_BACK_DATA_URL__", cardBack).replace("__SOLITAIRE_ICON_DATA_URL__", assetDataUrl("icon.png", "image/png"));
+  return template.replace("/*__SOLITAIRE_CORE__*/", core).replace("/*__SOLITAIRE_UI__*/", ui).replaceAll("__CARD_BACK_DATA_URL__", cardBack).replace("__SOLITAIRE_ICON_DATA_URL__", assetDataUrl("icon.png", "image/png"));
 }
 function tools() {
   return [{

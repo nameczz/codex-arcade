@@ -31,7 +31,7 @@
       background-image: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.035) 3px 4px);
       mix-blend-mode: soft-light;
     }
-    .screen { position: relative; background: #050711; }
+    .screen { position: relative; margin-inline: auto; background: #050711; }
     canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; touch-action: none; cursor: none; }
     .top-tools {
       display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 12px;
@@ -65,6 +65,8 @@
       .cabinet { border-radius: 15px; }
       .top-tools { padding: 7px 8px; }
       .brand span { display: none; }
+      .brand strong { font-size: 10px; }
+      .mini { min-width: 34px; }
       .deck { grid-template-columns: 1fr; padding: 9px 8px 10px; }
       .hint { display: none; }
       .touch { width: 100%; }
@@ -84,8 +86,9 @@
       </div>
       <div class="modes">
         <button class="mini" id="restart" aria-label="重新开始">R ↻</button>
-        <button class="mini" id="pip" aria-label="画中画">▣</button>
-        <button class="mini" id="fullscreen" aria-label="全屏">⛶</button>
+        <button class="mini" id="inline" aria-label="返回小窗" title="返回小窗">小</button>
+        <button class="mini" id="fullscreen" aria-label="打开大窗" title="打开大窗">大</button>
+        <button class="mini" id="close" aria-label="关闭游戏" title="关闭游戏">✕</button>
       </div>
     </header>
     <section class="deck" aria-label="触摸控制">
@@ -100,15 +103,31 @@
     <div class="status" id="status" aria-live="polite">移动挡板，按 SPACE 发射。</div>
   </main>
   <script>/*__GAME_CORE__*/</script>
+  <script>/*__GAME_UI__*/</script>
   <script>
     (() => {
       "use strict";
       const { BrickBreakerGame, WIDTH, HEIGHT } = window.BrickBreakerCore;
+      const {
+        computeInlineLayout,
+        normalizeDisplayMode,
+        hostDisplayMode,
+        supportsMode,
+        modeFromDisplayModeResult,
+        teardownNotification,
+      } = window.BrickBreakerUi;
       const canvas = document.getElementById("game");
       const ctx = canvas.getContext("2d");
       const cabinet = document.getElementById("cabinet");
       const action = document.getElementById("action");
+      const inlineButton = document.getElementById("inline");
+      const fullscreenButton = document.getElementById("fullscreen");
+      const closeButton = document.getElementById("close");
       const status = document.getElementById("status");
+      const screen = cabinet.querySelector(".screen");
+      const topTools = cabinet.querySelector(".top-tools");
+      const deck = cabinet.querySelector(".deck");
+      const statusRow = cabinet.querySelector(".status");
       const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const game = new BrickBreakerGame({ bestScore: readBest() });
       const particles = [];
@@ -117,8 +136,79 @@
       let lastTime = performance.now();
       let pointerActive = false;
       let lastSavedBest = game.bestScore;
+      let layoutRaf = 0;
+      let displayModeState = "inline";
+      let gameClosed = false;
 
       function hostApi() { return window.openai || {}; }
+      function currentDisplayMode() {
+        return displayModeState || "inline";
+      }
+      function syncDisplayModeFromHost() {
+        const mode = hostDisplayMode(hostApi());
+        if (mode) displayModeState = mode;
+        return displayModeState || "inline";
+      }
+      function hasMode(mode) {
+        return supportsMode(mode, hostApi());
+      }
+      function normalizeHostMode(mode) {
+        return normalizeDisplayMode(mode) || "inline";
+      }
+      function applyCanvasLayout() {
+        if (currentDisplayMode() !== "inline") {
+          canvas.style.width = "";
+          canvas.style.height = "";
+          screen.style.width = "";
+          screen.style.height = "";
+          return;
+        }
+        const viewport = window.visualViewport || window;
+        const viewportHeight = Math.max(
+          1,
+          Math.floor(Number(viewport.height) || window.innerHeight || document.documentElement.clientHeight || 0),
+        );
+        const availableWidth = Math.max(1, Math.floor(cabinet.clientWidth || 0));
+        const topOffset = Math.max(0, Math.floor(cabinet.getBoundingClientRect().top));
+        const chromeHeight = Math.max(0, Math.round((topTools ? topTools.getBoundingClientRect().height : 0)
+          + (deck ? deck.getBoundingClientRect().height : 0)
+          + (statusRow ? statusRow.getBoundingClientRect().height : 0)
+          + topOffset));
+        const layout = computeInlineLayout({
+          availableWidth,
+          availableHeight: viewportHeight,
+          chromeHeight,
+          aspectWidth: 4,
+          aspectHeight: 5,
+          maxWidth: 720,
+          maxHeight: 720,
+        });
+        const boardWidth = `${layout.width}px`;
+        const boardHeight = `${layout.height}px`;
+        canvas.style.width = boardWidth;
+        canvas.style.height = boardHeight;
+        screen.style.width = boardWidth;
+        screen.style.height = boardHeight;
+      }
+      function scheduleLayout() {
+        if (layoutRaf) return;
+        layoutRaf = requestAnimationFrame(() => {
+          layoutRaf = 0;
+          applyCanvasLayout();
+        });
+      }
+      function applyModeUi(mode) {
+        const effectiveMode = normalizeHostMode(mode || currentDisplayMode());
+        const canFullscreen = hasMode("fullscreen");
+        inlineButton.disabled = effectiveMode === "inline";
+        fullscreenButton.disabled = effectiveMode === "fullscreen" || !canFullscreen;
+      }
+      function statusForMode(mode) {
+        if (mode === "fullscreen") return "已请求全屏。";
+        if (mode === "pip") return "已请求画中画。";
+        if (mode === "inline") return "已返回聊天窗口。";
+        return "";
+      }
       function readBest() {
         const hostBest = Number(hostApi().widgetState && hostApi().widgetState.bestScore);
         if (Number.isFinite(hostBest) && hostBest >= 0) return hostBest;
@@ -247,16 +337,69 @@
         cabinet.focus({ preventScroll: true });
       }
       function restart() { game.reset(); particles.length = 0; popups.length = 0; status.textContent = "全新一局。移动挡板，按 SPACE 发射。"; cabinet.focus({ preventScroll: true }); }
-      async function requestMode(mode) {
+      async function requestDisplayMode(mode) {
         const api = hostApi();
-        if (typeof api.requestDisplayMode !== "function") { status.textContent = "当前 Codex 界面暂不支持切换显示模式。"; return; }
+        const requested = normalizeDisplayMode(mode);
+        if (!requested) {
+          status.textContent = "当前界面不支持该显示模式。";
+          return false;
+        }
+        if (typeof api.requestDisplayMode !== "function") {
+          status.textContent = "当前 Codex 界面暂不支持切换显示模式。";
+          return false;
+        }
+        if (!hasMode(requested) && requested !== "inline") {
+          status.textContent = `当前界面不支持${requested === "fullscreen" ? "全屏" : "画中画"}。`;
+          return false;
+        }
+
         try {
-          const available = Array.isArray(api.availableDisplayModes) ? api.availableDisplayModes : null;
-          if (available && !available.includes(mode)) { status.textContent = `当前界面不支持${mode === "fullscreen" ? "全屏" : "画中画"}。`; return; }
-          await api.requestDisplayMode({ mode }); status.textContent = mode === "fullscreen" ? "已请求全屏。" : "已请求画中画。";
-        } catch (_) { status.textContent = "显示模式切换未被当前界面接受。"; }
+          const result = await api.requestDisplayMode({ mode: requested });
+          const accepted = modeFromDisplayModeResult(result) || requested;
+          if (accepted === requested) {
+            displayModeState = accepted;
+            applyModeUi(accepted);
+            if (requested === "inline") scheduleLayout();
+            status.textContent = statusForMode(accepted);
+            return true;
+          }
+        } catch (_) {}
+
+        status.textContent = "显示模式切换未被当前界面接受。";
+        applyModeUi();
+        return false;
       }
+      async function onFullscreenButton() {
+        const current = currentDisplayMode();
+        await requestDisplayMode(current === "fullscreen" ? "inline" : "fullscreen");
+      }
+      async function onInlineButton() {
+        await requestDisplayMode("inline");
+      }
+      function collapseGameView() {
+        cabinet.hidden = true;
+        document.documentElement.style.cssText += ";height:0;min-height:0;overflow:hidden";
+        document.body.style.cssText += ";height:0;min-height:0;padding:0;overflow:hidden";
+      }
+      function requestGameClose() {
+        if (gameClosed) return;
+        gameClosed = true;
+        held = 0;
+        const api = hostApi();
+        const protocolFallback = () => {
+          window.parent.postMessage(teardownNotification(), "*");
+          window.parent.postMessage({ jsonrpc: "2.0", method: "ui/notifications/size-changed", params: { height: 0 } }, "*");
+        };
+        const close = api.requestTeardown || api.requestClose || api.closeWidget || api.dismissWidget;
+        if (typeof close === "function") {
+          try { Promise.resolve(close.call(api, {})).catch(protocolFallback); }
+          catch (_) { protocolFallback(); }
+        } else protocolFallback();
+        collapseGameView();
+      }
+
       function loop(now) {
+        if (gameClosed) return;
         const dt = Math.min(.05, (now - lastTime) / 1000); lastTime = now;
         if (held) game.movePaddle(held, dt);
         const state = game.update(dt);
@@ -269,6 +412,7 @@
       }
       document.addEventListener("keydown", (event) => {
         if (["ArrowLeft","ArrowRight","Space"].includes(event.code)) event.preventDefault();
+        if (event.code === "Escape" && currentDisplayMode() !== "inline") { requestDisplayMode("inline"); return; }
         if (event.code === "ArrowLeft" || event.key === "a" || event.key === "A") held = -1;
         if (event.code === "ArrowRight" || event.key === "d" || event.key === "D") held = 1;
         if (event.code === "Space" && !event.repeat) doAction();
@@ -288,9 +432,30 @@
       });
       action.addEventListener("click", doAction);
       document.getElementById("restart").addEventListener("click", restart);
-      document.getElementById("pip").addEventListener("click", () => requestMode("pip"));
-      document.getElementById("fullscreen").addEventListener("click", () => requestMode("fullscreen"));
+      inlineButton.addEventListener("click", onInlineButton);
+      fullscreenButton.addEventListener("click", onFullscreenButton);
+      closeButton.addEventListener("click", requestGameClose);
+      if (typeof window.ResizeObserver !== "undefined") {
+        const resizeObserver = new ResizeObserver(scheduleLayout);
+        resizeObserver.observe(cabinet);
+        resizeObserver.observe(document.body);
+      }
+      window.addEventListener("resize", scheduleLayout);
+      if (window.visualViewport) window.visualViewport.addEventListener("resize", scheduleLayout);
+      const refreshModeUi = () => {
+        syncDisplayModeFromHost();
+        applyModeUi();
+      };
+      window.addEventListener("focus", refreshModeUi);
+      window.addEventListener("visibilitychange", () => {
+        refreshModeUi();
+        scheduleLayout();
+      });
+      window.addEventListener("load", scheduleLayout);
       render(performance.now()); requestAnimationFrame(loop); setTimeout(() => cabinet.focus({ preventScroll: true }), 100);
+      syncDisplayModeFromHost();
+      applyCanvasLayout();
+      applyModeUi();
     })();
   </script>
 </body>

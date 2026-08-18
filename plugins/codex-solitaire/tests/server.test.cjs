@@ -19,8 +19,12 @@ test("serves self-contained HTML and embeds the local GPT knot card back", async
   assert.match(resource.text, /Codex Felt Atelier/);
   assert.match(resource.text, /class SolitaireGame/);
   assert.match(resource.text, /id="cardBackAsset" src="data:image\/png;base64,/);
-  assert.doesNotMatch(resource.text, /__CARD_BACK_DATA_URL__|__SOLITAIRE_CORE__|__SOLITAIRE_ICON_DATA_URL__/);
+  assert.doesNotMatch(resource.text, /__CARD_BACK_DATA_URL__|__SOLITAIRE_CORE__|__SOLITAIRE_UI__|__SOLITAIRE_ICON_DATA_URL__/);
   assert.doesNotMatch(resource.text, /<(?:script|link|img)[^>]+(?:src|href)=["']https?:\/\//i);
+  assert.match(resource.text, /id="inline">小窗<\/button>/);
+  assert.match(resource.text, /requestMode\("inline"\)/);
+  assert.match(resource.text, /id="close"/);
+  assert.match(resource.text, /ui\/notifications\/request-teardown/);
 });
 
 test("tool call returns structured content and matching UI metadata", async () => {

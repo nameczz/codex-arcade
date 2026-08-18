@@ -1,8 +1,8 @@
 {
   "name": "codex-solitaire",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "description": "Dependency-free MCP App Klondike Solitaire for Codex",
-  "scripts": { "test": "node --test tests/*.test.cjs", "check": "node --check mcp/server.cjs && node --check mcp/game-core.js && npm test" },
+  "scripts": { "test": "node --test tests/*.test.cjs", "check": "node --check mcp/server.cjs && node --check mcp/game-core.js && node --check mcp/game-ui.js && npm test" },
   "license": "MIT"
 }

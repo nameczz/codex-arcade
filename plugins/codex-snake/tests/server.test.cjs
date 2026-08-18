@@ -18,8 +18,11 @@ test("serves a self-contained MCP App HTML resource", async () => {
   assert.equal(resource.mimeType, "text/html;profile=mcp-app");
   assert.match(resource.text, /Codex Snake/);
   assert.match(resource.text, /class SnakeGame/);
-  assert.doesNotMatch(resource.text, /__SNAKE_ICON_DATA_URL__|__GAME_CORE__/);
+  assert.doesNotMatch(resource.text, /__SNAKE_ICON_DATA_URL__|__GAME_CORE__|__GAME_UI__/);
   assert.doesNotMatch(resource.text, /https?:\/\//);
+  assert.match(resource.text, /id="close"/);
+  assert.match(resource.text, /id="inline"/);
+  assert.match(resource.text, /ui\/notifications\/request-teardown/);
 });
 
 test("tool call returns structured content and matching UI metadata", async () => {
