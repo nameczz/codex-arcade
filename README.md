@@ -1,85 +1,205 @@
-# Codex Arcade
+# Codex Arcade · 在 Codex 里开一间小街机厅
 
-一个可直接加入 Codex 的本地游戏插件市场。目前包含三款无需网络、无需第三方运行时资源的 MCP App：
+Three local-first games for the moments when your agent is thinking very, very hard.
 
-- **Codex Brick Breaker**：原创「Codex Neon Workshop」打砖块。3 条命、积分与最佳成绩、特殊砖块、连续击破反馈、3 种以上关卡布局，以及键盘、鼠标、触摸控制。
-- **Codex Snake**：原创贪吃蛇，支持键盘、触摸、暂停、重开与最佳成绩。
-- **Codex Solitaire**：原创「Codex Felt Atelier」纸牌接龙。完整 draw-one Klondike 规则，支持点击、拖放、移动端两步选择、撤销、提示、计时、步数和得分。
+三款开箱即玩的 Codex 游戏。适合等任务跑完时，进行一点克制且不影响生产力统计的摸鱼。
 
-所有图形均由 Codex 以 Canvas、CSS、SVG 和本地渲染 PNG 创作。运行时不加载远程字体、图片或第三方游戏资源。
+[中文](#中文) · [English](#english) · [安装 Install](#安装--install) · [游戏 Games](#游戏--games) · [FAQ](#faq)
 
-## 本地安装
+---
 
-需要已安装并可运行的 `codex` CLI。在仓库根目录执行：
+<a id="中文"></a>
+
+## 中文
+
+Codex Arcade 是一个可直接加入 Codex 的插件市场，当前有三款完整可玩的 MCP App：打砖块、贪吃蛇和纸牌接龙。它们都在 Codex 任务中打开，不需要跳到外部游戏网站。
+
+游戏逻辑、界面与素材均随插件保存在本地；运行时不下载远程图片、字体或第三方游戏资源，也没有 npm runtime 依赖。每款游戏由本地 Node.js stdio MCP 服务提供一个自包含的 `text/html;profile=mcp-app` 界面。
+
+<a id="english"></a>
+
+## English
+
+Codex Arcade is a plugin marketplace with three complete MCP App games: Brick Breaker, Snake, and draw-one Klondike Solitaire. Each game opens inside a Codex task—no detour to an external game site required.
+
+Game logic, UI, and artwork ship locally with the plugins. There are no remote images, fonts, third-party game assets, npm packages, or network runtime dependencies. Each plugin uses a local Node.js stdio MCP server to serve a self-contained `text/html;profile=mcp-app` interface.
+
+## 安装 · Install
+
+### 从 GitHub 安装 · Install from GitHub
+
+把公开仓库加入 Codex marketplace，然后安装一款或全部游戏：
+
+Add the public repository as a Codex marketplace, then install one game or all three:
 
 ```bash
-codex plugin marketplace add "$(pwd)"
+codex plugin marketplace add nameczz/codex-arcade --ref main
+
 codex plugin add codex-brick-breaker@codex-arcade
 codex plugin add codex-snake@codex-arcade
 codex plugin add codex-solitaire@codex-arcade
 ```
 
-也可以使用安装脚本：
+### Clone 后本地安装 · Install from a local clone
+
+```bash
+git clone https://github.com/nameczz/codex-arcade.git
+cd codex-arcade
+./scripts/install-local.sh all
+```
+
+也可以只安装一款。`both` 为旧参数兼容别名，目前与 `all` 相同。
+
+Install one game at a time if preferred. `both` remains as a backwards-compatible alias for `all`.
 
 ```bash
 ./scripts/install-local.sh brick
 ./scripts/install-local.sh snake
 ./scripts/install-local.sh solitaire
 ./scripts/install-local.sh all
-./scripts/install-local.sh both  # 兼容旧参数，等同 all
 ```
 
-安装后新建一个 Codex 任务，输入 `打开打砖块`、`打开贪吃蛇` 或 `打开纸牌接龙`。新任务能确保 Codex 载入最新的技能和 MCP 工具。
+安装或更新插件后，请新建一个 Codex 任务，让新的 Skill 与 MCP 工具进入任务上下文。
 
-## 将来从 GitHub 安装
+After installing or updating, start a new Codex task so it picks up the latest Skill and MCP tool.
 
-本仓库当前只是本地仓库，尚未创建或发布远程 GitHub 仓库。将来推送到 GitHub 后，可使用实际仓库地址：
+## 游戏 · Games
 
-```bash
-codex plugin marketplace add owner/repo --ref main
-codex plugin add codex-brick-breaker@codex-arcade
-```
+### 🧱 Codex Brick Breaker
 
-请把 `owner/repo` 替换成届时真实存在的 GitHub 仓库；当前不要把这条命令当成已发布链接。
+原创的 “Codex Neon Workshop” 打砖块：三条命、多关卡布局、特殊砖块、连击反馈、粒子效果、计分与本地最佳成绩。支持键盘、鼠标和触摸操作。
 
-## 操作
+An original “Codex Neon Workshop” brick breaker with three lives, multiple layouts, special bricks, combo feedback, particles, scoring, and local best-score persistence. Keyboard, pointer, and touch controls are included.
 
-| 游戏 | 键盘 | 鼠标 / 触摸 |
-| --- | --- | --- |
-| 打砖块 | `←` `→` 或 `A` `D` 移动；`Space` 发射、暂停/继续；`R` 重开 | 在游戏区移动或拖动挡板；底部有可见触摸按钮 |
-| 贪吃蛇 | 方向键或 WASD；`Space` 暂停；`R` 重开 | 滑动或使用方向按钮 |
-| 纸牌接龙 | `⌘/Ctrl+Z` 撤销；`H` 提示；`N` 新局 | 点击或拖放；移动端先选择源牌，再点目标牌堆 |
+![Codex Brick Breaker 游戏截图](./plugins/codex-brick-breaker/assets/screenshot.png)
 
-支持时，三款游戏都可以向 Codex 请求画中画或全屏；不支持时会在界面内给出提示，不影响内联游戏。
+新任务触发词 · New-task prompts:
 
-## 仓库结构
+- `打开打砖块` / `玩打砖块`
+- `Start Brick Breaker` / `Play Breakout`
+
+控制 · Controls:
+
+- `←` `→` 或 `A` `D` 移动挡板；`Space` 发射、暂停或继续；`R` 重开。
+- Move with `←` `→` or `A` `D`; press `Space` to launch, pause, or resume; press `R` to restart.
+- 鼠标或触摸拖动挡板，移动端也有可见按钮。Drag the paddle with a pointer or touch; visible mobile controls are provided.
+
+### 🐍 Codex Snake
+
+一条住在对话里的原创小蛇，支持分数、最佳成绩、暂停、重开、键盘、滑动与方向按钮。它不读取你的代码，只吃棋盘上的果子。
+
+An original snake that lives inside a conversation, with scoring, best-score persistence, pause, restart, keyboard, swipe, and directional controls. It does not eat your code—only the fruit on its board.
+
+![Codex Snake 游戏截图](./plugins/codex-snake/assets/screenshot.png)
+
+新任务触发词 · New-task prompts:
+
+- `打开贪吃蛇` / `玩贪吃蛇` / `来一局贪吃蛇`
+- `Start Snake Game` / `Play Snake`
+
+控制 · Controls:
+
+- 方向键或 WASD 移动；`Space` 暂停或继续；`R` 重开。
+- Move with arrow keys or WASD; press `Space` to pause or resume; press `R` to restart.
+- 移动端可滑动或使用方向按钮。Swipe or use the on-screen direction buttons on mobile.
+
+### ♠ Codex Solitaire
+
+原创的 “Codex Felt Atelier” draw-one Klondike 纸牌接龙，包含标准 52 张牌、七列发牌、翻牌与重新发牌、四组 Foundation、正确的红黑交替规则、撤销、提示、计时、步数与得分。GPT knot 卡背素材也完全保存在插件内。
+
+An original “Codex Felt Atelier” draw-one Klondike table with a standard 52-card deck, seven tableau columns, stock and redeals, four foundations, correct alternating-color rules, undo, hints, timer, moves, and scoring. Its GPT knot card-back artwork also ships inside the plugin.
+
+![Codex Solitaire 游戏截图](./plugins/codex-solitaire/assets/screenshot.png)
+
+新任务触发词 · New-task prompts:
+
+- `打开纸牌接龙` / `玩纸牌接龙` / `来一局接龙`
+- `Start Solitaire` / `Play Klondike` / `Play Patience`
+
+控制 · Controls:
+
+- 点击或拖放纸牌；移动端先点来源牌，再点目标牌堆。
+- Click or drag cards; on mobile, select a source card and then tap its destination.
+- `⌘/Ctrl+Z` 撤销，`H` 提示，`N` 新局。Use `⌘/Ctrl+Z` to undo, `H` for a hint, and `N` for a new game.
+
+支持时，三款游戏均可向 Codex 请求画中画或全屏；不支持时会留在内联模式，不影响游玩。
+
+When supported by the host, all three games can request picture-in-picture or fullscreen. Otherwise they continue to work inline.
+
+## 仓库结构 · Repository structure
 
 ```text
-.agents/plugins/marketplace.json   # codex-arcade 市场清单
-plugins/codex-brick-breaker/       # 打砖块插件、MCP 服务、技能、资源、测试
-plugins/codex-snake/               # 贪吃蛇插件、MCP 服务、技能、资源、测试
-plugins/codex-solitaire/           # 纸牌接龙插件、MCP 服务、技能、资源、测试
-scripts/install-local.sh           # 安全的本地安装入口
+.agents/plugins/marketplace.json   # codex-arcade marketplace catalog
+plugins/codex-brick-breaker/       # Brick Breaker MCP App, Skill, assets, tests
+plugins/codex-snake/               # Snake MCP App, Skill, assets, tests
+plugins/codex-solitaire/           # Solitaire MCP App, Skill, assets, tests
+scripts/install-local.sh           # local marketplace/install helper
+LICENSE                            # MIT license
 ```
 
-## 验证
+每个插件都可以独立安装和验证，包含 `.codex-plugin/plugin.json`、`.mcp.json`、Skill、MCP 服务、本地资源与测试。
+
+Each plugin is independently installable and includes its manifest, `.mcp.json`, Skill, MCP server, local assets, and tests.
+
+## 验证 · Validation
+
+只运行 Node.js 内置测试工具，不需要先安装依赖：
+
+The test suite uses Node.js built-ins and requires no dependency install:
 
 ```bash
 node --check plugins/codex-brick-breaker/mcp/server.cjs
 node --check plugins/codex-brick-breaker/mcp/game-core.js
+node --check plugins/codex-snake/mcp/server.cjs
+node --check plugins/codex-snake/mcp/game-core.js
+node --check plugins/codex-solitaire/mcp/server.cjs
+node --check plugins/codex-solitaire/mcp/game-core.js
+
 node --test plugins/codex-brick-breaker/tests/*.test.cjs
 node --test plugins/codex-snake/tests/*.test.cjs
 node --test plugins/codex-solitaire/tests/*.test.cjs
+```
 
+如本机有 Codex 的 `plugin-creator` 与 `skill-creator`，还可以运行结构校验：
+
+If the Codex `plugin-creator` and `skill-creator` tools are available locally, validate the package structure as well:
+
+```bash
 python3 /path/to/plugin-creator/scripts/validate_plugin.py plugins/codex-brick-breaker
 python3 /path/to/plugin-creator/scripts/validate_plugin.py plugins/codex-snake
 python3 /path/to/plugin-creator/scripts/validate_plugin.py plugins/codex-solitaire
+
 python3 /path/to/skill-creator/scripts/quick_validate.py plugins/codex-brick-breaker/skills/codex-brick-breaker
+python3 /path/to/skill-creator/scripts/quick_validate.py plugins/codex-snake/skills/codex-snake
 python3 /path/to/skill-creator/scripts/quick_validate.py plugins/codex-solitaire/skills/codex-solitaire
 ```
 
-插件服务通过 stdio 使用 JSON-RPC/MCP 协议。HTML 游戏资源为 `text/html;profile=mcp-app`，在服务返回时会内联所有运行所需代码与图标。
+## FAQ
+
+<details>
+<summary><strong>会访问网络或上传游戏数据吗？ / Does it access the network or upload game data?</strong></summary>
+
+不会。游戏运行时没有远程资源依赖。MCP App 的代码和图片由本地插件提供；最佳成绩等少量状态仅使用宿主 widget state，并带有本地安全回退。
+
+No. The games have no remote runtime dependencies. Code and images are served by the local plugins; small values such as best scores use host widget state with a safe local fallback.
+</details>
+
+<details>
+<summary><strong>为什么安装后要新建任务？ / Why start a new task after installation?</strong></summary>
+
+新任务会加载刚安装或更新的 Skill 与 MCP 工具。旧任务可能仍保留安装前的工具快照。
+
+A new task loads the newly installed or updated Skill and MCP tool. Existing tasks may retain an older tool snapshot.
+</details>
+
+<details>
+<summary><strong>可以贡献新游戏吗？ / Can I contribute another game?</strong></summary>
+
+可以。请保持插件可独立安装、runtime 零远程依赖、素材许可清晰，并为游戏规则与 MCP resource metadata 添加测试。提交前运行上面的验证命令。
+
+Yes. Keep the plugin independently installable, avoid remote runtime dependencies, use clearly licensed artwork, and test both game rules and MCP resource metadata. Run the validation commands above before submitting.
+</details>
 
 ## License
 
-[MIT](./LICENSE)
+[MIT](./LICENSE) © Codex Arcade contributors
