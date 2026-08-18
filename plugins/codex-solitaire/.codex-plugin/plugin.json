@@ -1,0 +1,41 @@
+{
+  "name": "codex-solitaire",
+  "version": "0.1.0+codex.20260818112445",
+  "description": "A complete, polished draw-one Klondike Solitaire game for Codex.",
+  "author": {
+    "name": "Codex Arcade"
+  },
+  "license": "MIT",
+  "keywords": [
+    "solitaire",
+    "klondike",
+    "patience",
+    "game",
+    "\u7eb8\u724c\u63a5\u9f99"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex Solitaire",
+    "shortDescription": "\u5728 Codex \u91cc\u94fa\u5f00\u4e00\u5c40\u539f\u521b\u7eb8\u724c\u63a5\u9f99\u3002",
+    "longDescription": "Codex Felt Atelier is a complete draw-one Klondike Solitaire table with correct 52-card rules, click, drag and touch play, undo, hints, timer, moves, scoring, and supported inline, picture-in-picture or fullscreen modes.",
+    "developerName": "Codex Arcade",
+    "category": "Entertainment",
+    "capabilities": [
+      "Interactive"
+    ],
+    "defaultPrompt": [
+      "\u6253\u5f00\u7eb8\u724c\u63a5\u9f99",
+      "\u73a9\u4e00\u5c40 Solitaire",
+      "Start Klondike"
+    ],
+    "brandColor": "#123F34",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png",
+    "logoDark": "./assets/logo-dark.png",
+    "screenshots": [
+      "./assets/screenshot.png"
+    ]
+  },
+  "mcpServers": "./.mcp.json",
+  "apps": "./.app.json"
+}

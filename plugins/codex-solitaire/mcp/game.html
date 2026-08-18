@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Codex Solitaire</title>
+  <style>
+    :root { color-scheme: dark; --felt:#123f34; --felt-deep:#082b25; --cream:#fff9e9; --ink:#17221f; --orange:#f18a4a; --cyan:#43c9bf; --line:rgba(247,238,208,.25); --gap:clamp(4px,1.1vw,10px); }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; background:transparent; }
+    body { padding:7px; color:var(--cream); font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif; }
+    button { font:inherit; }
+    .atelier { width:min(100%,820px); margin:auto; overflow:hidden; border-radius:24px; border:1px solid rgba(255,255,255,.14); background:#0b211d; box-shadow:0 24px 60px rgba(0,0,0,.45); outline:none; }
+    .bar { min-height:64px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; background:#102a25; border-bottom:1px solid rgba(255,255,255,.09); }
+    .brand { display:flex; align-items:center; gap:9px; min-width:0; }
+    .brand img { width:38px; height:38px; border-radius:11px; box-shadow:0 5px 15px rgba(0,0,0,.27); }
+    .brand b { display:block; font-size:14px; letter-spacing:.02em; }
+    .brand small { display:block; color:#85afa4; font-size:9px; letter-spacing:.12em; margin-top:2px; }
+    .stats { display:flex; gap:6px; }
+    .stat { min-width:64px; padding:5px 8px; text-align:center; border-left:1px solid rgba(255,255,255,.1); }
+    .stat span { display:block; color:#7da59b; font-size:8px; letter-spacing:.12em; }
+    .stat strong { font:800 15px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .table { position:relative; padding:14px; min-height:676px; background:radial-gradient(circle at 50% 16%,rgba(61,169,139,.2),transparent 43%),linear-gradient(145deg,var(--felt),var(--felt-deep)); }
+    .table::before { content:""; position:absolute; inset:0; pointer-events:none; opacity:.2; background-image:repeating-linear-gradient(115deg,transparent 0 5px,rgba(255,255,255,.018) 5px 6px),repeating-linear-gradient(25deg,transparent 0 8px,rgba(0,0,0,.03) 8px 9px); }
+    .top,.tableau { position:relative; z-index:1; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:var(--gap); }
+    .top { margin-bottom:15px; }
+    .tableau { min-height:485px; }
+    .slot,.pile { position:relative; min-width:0; }
+    .slot { aspect-ratio:5/7; border:1.5px dashed var(--line); border-radius:10px; }
+    .slot::after { position:absolute; inset:0; display:grid; place-items:center; color:rgba(255,249,233,.2); font-size:clamp(18px,4vw,35px); }
+    .stock::after { content:"↻"; }
+    .foundation[data-suit="spades"]::after { content:"♠"; }.foundation[data-suit="hearts"]::after { content:"♥"; }.foundation[data-suit="diamonds"]::after { content:"♦"; }.foundation[data-suit="clubs"]::after { content:"♣"; }
+    .spacer { grid-column:3; }
+    .foundation:first-of-type { grid-column:4; }
+    .pile { min-height:480px; border-radius:10px; }
+    .pile.empty { outline:1.5px dashed var(--line); outline-offset:-1px; height:calc((100vw - 52px)/7*1.4); max-height:116px; }
+    .card { position:absolute; left:0; top:0; width:100%; aspect-ratio:5/7; border-radius:10px; background:var(--cream); color:var(--ink); border:1px solid rgba(26,39,35,.25); box-shadow:0 4px 9px rgba(0,0,0,.28); user-select:none; touch-action:none; cursor:pointer; transition:transform .12s ease,box-shadow .12s ease; overflow:hidden; }
+    .top .card { inset:-1.5px; width:calc(100% + 3px); }
+    .card:hover { transform:translateY(-2px); box-shadow:0 7px 14px rgba(0,0,0,.31); }
+    .card.red { color:#c9493f; }
+    .card.selected { outline:3px solid #ffd178; outline-offset:2px; transform:translateY(-4px); z-index:80!important; }
+    .card.hint { animation:hintPulse .7s ease-in-out 2; }
+    .card.back { border-color:rgba(255,255,255,.22); background-color:#173e39; background-image:repeating-linear-gradient(45deg,rgba(241,138,74,.65) 0 5px,transparent 5px 10px),linear-gradient(135deg,#12544c,#082b25); background-size:18px 18px,cover; background-position:center; box-shadow:inset 0 0 0 4px #f6e6be,inset 0 0 0 6px #214b43,0 4px 9px rgba(0,0,0,.28); }
+    .back-art { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+    .corner { position:absolute; top:5px; left:6px; display:grid; justify-items:center; font:900 clamp(10px,2vw,17px)/.95 ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .corner.bottom { top:auto; left:auto; right:6px; bottom:5px; transform:rotate(180deg); }
+    .pip { position:absolute; inset:0; display:grid; place-items:center; font-size:clamp(23px,5vw,48px); opacity:.88; }
+    .mini-back { position:absolute; inset:7px; border:1px solid rgba(255,255,255,.42); border-radius:6px; }
+    .toolbar { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 11px; background:#102a25; border-top:1px solid rgba(255,255,255,.08); }
+    .actions { display:flex; flex-wrap:wrap; gap:6px; }
+    .btn { min-height:35px; padding:7px 11px; border:1px solid #42655d; border-radius:10px; color:#d9e9e3; background:#173a33; font-weight:800; font-size:11px; cursor:pointer; box-shadow:inset 0 -2px rgba(0,0,0,.18); }
+    .btn.primary { color:#16231f; border-color:#ffc38f; background:linear-gradient(#ffa968,#eb7a3c); }
+    .btn:hover { filter:brightness(1.1); }
+    .btn:disabled { opacity:.4; cursor:not-allowed; }
+    .btn:focus-visible,.card:focus-visible { outline:3px solid #ffd178; outline-offset:2px; }
+    .message { color:#85afa4; font-size:10px; text-align:right; }
+    .overlay { position:absolute; inset:0; z-index:100; display:none; place-items:center; padding:20px; background:rgba(4,24,20,.72); backdrop-filter:blur(5px); }
+    .overlay.show { display:grid; }
+    .dialog { width:min(92%,360px); padding:24px; text-align:center; border-radius:20px; color:#163129; background:#fff5db; border:3px solid #f6b26c; box-shadow:0 20px 45px rgba(0,0,0,.35); }
+    .dialog .mark { font-size:42px; }.dialog h2 { margin:4px 0 7px; font-size:25px; }.dialog p { margin:0 0 15px; color:#5c766d; font-weight:700; font-size:12px; }
+    @keyframes hintPulse { 50% { outline:4px solid var(--cyan); outline-offset:3px; filter:brightness(1.1); } }
+    @media (max-width:520px) {
+      body { padding:3px; }.atelier { border-radius:16px; }.bar { min-height:55px; padding:7px 8px; }.brand img { width:33px;height:33px; }.brand small { display:none; }.brand b { font-size:12px; }
+      .stat { min-width:44px;padding:3px 4px; }.stat strong { font-size:12px; }.table { padding:9px 7px; min-height:492px; }.top { margin-bottom:10px; }.tableau { min-height:385px; }
+      .slot,.card { border-radius:6px; }.pile { min-height:380px; }.card { box-shadow:0 2px 5px rgba(0,0,0,.28); }.card.back { box-shadow:inset 0 0 0 2px #f6e6be,inset 0 0 0 3px #214b43,0 2px 5px rgba(0,0,0,.28); }
+      .corner { top:3px;left:3px }.corner.bottom { right:3px;bottom:3px }.toolbar { align-items:flex-start;padding:7px; }.btn { min-height:34px;padding:6px 8px;font-size:10px }.message { max-width:80px;font-size:8px; }
+    }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important;transition:none!important; } }
+  </style>
+</head>
+<body>
+  <img id="cardBackAsset" src="__CARD_BACK_DATA_URL__" alt="" hidden>
+  <main class="atelier" id="atelier" tabindex="0" aria-label="Codex 纸牌接龙游戏">
+    <header class="bar">
+      <div class="brand"><img src="__SOLITAIRE_ICON_DATA_URL__" alt="Codex Felt Atelier 图标"><div><b>Codex Felt Atelier</b><small>DRAW ONE · KLONDIKE</small></div></div>
+      <div class="stats" aria-live="polite"><div class="stat"><span>TIME</span><strong id="time">00:00</strong></div><div class="stat"><span>MOVES</span><strong id="moves">0</strong></div><div class="stat"><span>SCORE</span><strong id="score">0</strong></div></div>
+    </header>
+    <section class="table" id="table">
+      <div class="top">
+        <div class="slot stock" id="stock" aria-label="牌堆"></div><div class="slot waste" id="waste" aria-label="废牌堆"></div><div class="spacer"></div>
+        <div class="slot foundation" data-suit="spades" aria-label="黑桃收集区"></div><div class="slot foundation" data-suit="hearts" aria-label="红心收集区"></div><div class="slot foundation" data-suit="diamonds" aria-label="方块收集区"></div><div class="slot foundation" data-suit="clubs" aria-label="梅花收集区"></div>
+      </div>
+      <div class="tableau" id="tableau"></div>
+      <div class="overlay" id="overlay"><div class="dialog"><div class="mark" id="overlayMark">♣</div><h2 id="overlayTitle">牌局完成</h2><p id="overlayText"></p><button class="btn primary" id="overlayAction">再开一局</button></div></div>
+    </section>
+    <footer class="toolbar">
+      <div class="actions"><button class="btn primary" id="newGame">新局</button><button class="btn" id="undo">↶ 撤销</button><button class="btn" id="hint">✦ 提示</button><button class="btn" id="pip">小窗</button><button class="btn" id="fullscreen">全屏</button></div>
+      <div class="message" id="message" aria-live="polite">点击或拖动纸牌；移动端先选牌，再点目标。</div>
+    </footer>
+  </main>
+  <script>/*__SOLITAIRE_CORE__*/</script>
+  <script>
+    (() => {
+      "use strict";
+      const { SolitaireGame, SUITS, SUIT_SYMBOLS, rankLabel } = window.SolitaireCore;
+      const game = new SolitaireGame();
+      const atelier = document.getElementById("atelier"), tableauEl = document.getElementById("tableau"), stockEl = document.getElementById("stock"), wasteEl = document.getElementById("waste");
+      const message = document.getElementById("message"), overlay = document.getElementById("overlay");
+      let selected = null, startedAt = Date.now(), timerPaused = false, elapsedBefore = 0, dragSource = null;
+      function hostApi() { return window.openai || {}; }
+      function sourceKey(source) { return source ? `${source.type}:${source.col ?? source.suit ?? ""}:${source.start ?? ""}` : ""; }
+      function cardHtml(card, source, top, z) {
+        const el = document.createElement("button"); el.type="button"; el.className=`card ${card.faceUp ? `face ${card.color}` : "back"}`; el.style.zIndex=String(z); el.dataset.source=JSON.stringify(source); el.setAttribute("aria-label",card.faceUp?`${rankLabel(card.rank)} ${SUIT_SYMBOLS[card.suit]}`:"未翻开的牌");
+        if (sourceKey(selected)===sourceKey(source)) el.classList.add("selected");
+        if (!card.faceUp) { el.innerHTML='<span class="mini-back"></span>'; const art=document.getElementById("cardBackAsset").cloneNode(); art.removeAttribute("id"); art.removeAttribute("hidden"); art.className="back-art"; el.prepend(art); }
+        else el.innerHTML=`<span class="corner">${rankLabel(card.rank)}<i>${SUIT_SYMBOLS[card.suit]}</i></span><span class="pip">${SUIT_SYMBOLS[card.suit]}</span><span class="corner bottom">${rankLabel(card.rank)}<i>${SUIT_SYMBOLS[card.suit]}</i></span>`;
+        el.draggable=Boolean(card.faceUp); el.addEventListener("click",e=>{e.stopPropagation();handleCardClick(source)}); el.addEventListener("dblclick",e=>{e.stopPropagation();if(source.type!=="foundation"&&game.autoMove(source)){selected=null;render();}});
+        el.addEventListener("dragstart",e=>{if(!card.faceUp){e.preventDefault();return;}dragSource=source;e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",sourceKey(source));}); el.addEventListener("dragend",()=>{dragSource=null;});
+        return el;
+      }
+      function render() {
+        const state=game.snapshot(); stockEl.innerHTML="";wasteEl.innerHTML="";tableauEl.innerHTML="";
+        if(state.stock.length){const c=state.stock[state.stock.length-1],el=cardHtml(c,{type:"stock"},true,1);stockEl.appendChild(el);} stockEl.onclick=()=>{selected=null;if(game.draw())render();};
+        if(state.waste.length) wasteEl.appendChild(cardHtml(state.waste[state.waste.length-1],{type:"waste"},true,1)); wasteEl.onclick=e=>{if(e.target===wasteEl)handleDestination({type:"waste"});};
+        document.querySelectorAll(".foundation").forEach(slot=>{const suit=slot.dataset.suit,pile=state.foundations[suit];slot.innerHTML="";if(pile.length)slot.appendChild(cardHtml(pile[pile.length-1],{type:"foundation",suit},true,1));slot.onclick=e=>{if(e.target===slot)handleDestination({type:"foundation",suit});};wireDrop(slot,{type:"foundation",suit});});
+        state.tableau.forEach((pile,col)=>{const colEl=document.createElement("div");colEl.className=`pile ${pile.length?"":"empty"}`;colEl.dataset.col=String(col);pile.forEach((card,index)=>{const el=cardHtml(card,{type:"tableau",col,start:index},index===pile.length-1,index+1);el.style.top=`${cardOffset(pile,index)}px`;colEl.appendChild(el);});colEl.onclick=e=>{if(e.target===colEl)handleDestination({type:"tableau",col});};wireDrop(colEl,{type:"tableau",col});tableauEl.appendChild(colEl);});
+        document.getElementById("moves").textContent=state.moves;document.getElementById("score").textContent=state.score;document.getElementById("undo").disabled=!state.canUndo;
+        overlay.classList.toggle("show",state.won||state.lost);if(state.won){document.getElementById("overlayMark").textContent="♛";document.getElementById("overlayTitle").textContent="牌局完成";document.getElementById("overlayText").textContent=`${formatTime(currentElapsed())} · ${state.moves} 步 · ${state.score} 分`;timerPaused=true;}else if(state.lost){document.getElementById("overlayMark").textContent="♠";document.getElementById("overlayTitle").textContent="无路可走";document.getElementById("overlayText").textContent="可以撤销一步，或开始一局新牌。";timerPaused=true;}
+      }
+      function cardOffset(pile,index){let y=0;const mobile=innerWidth<=520;for(let i=0;i<index;i++)y+=pile[i].faceUp?(mobile?19:31):(mobile?11:18);return y;}
+      function handleCardClick(source){if(source.type==="stock"){selected=null;if(game.draw())render();return;}if(selected){if(sourceKey(selected)===sourceKey(source)){selected=null;render();return;}if(source.type==="tableau"){handleDestination({type:"tableau",col:source.col});return;}if(source.type==="foundation"){handleDestination({type:"foundation",suit:source.suit});return;}}selected=source;message.textContent="已选中，点击目标牌堆完成移动。";render();}
+      function perform(source,target){if(!source)return false;if(target.type==="foundation"&&(source.type==="waste"||source.type==="tableau"))return game.moveToFoundation(source);if(target.type==="tableau"){if(source.type==="waste")return game.moveWasteToTableau(target.col);if(source.type==="tableau")return game.moveTableauToTableau(source.col,source.start,target.col);if(source.type==="foundation")return game.moveFoundationToTableau(source.suit,target.col);}return false;}
+      function handleDestination(target){if(!selected)return;if(perform(selected,target)){message.textContent="移动完成。";selected=null;}else message.textContent="这里不能放这张牌。";render();}
+      function wireDrop(el,target){el.addEventListener("dragover",e=>{if(dragSource)e.preventDefault();});el.addEventListener("drop",e=>{e.preventDefault();if(perform(dragSource,target)){selected=null;message.textContent="移动完成。";}else message.textContent="这里不能放这张牌。";dragSource=null;render();});}
+      function currentElapsed(){return elapsedBefore+(timerPaused?0:Date.now()-startedAt)}
+      function formatTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${String(m).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`}
+      function newGame(){game.newGame();selected=null;elapsedBefore=0;startedAt=Date.now();timerPaused=false;message.textContent="新牌已发好。祝你好运。";render();}
+      function showHint(){document.querySelectorAll(".hint").forEach(el=>el.classList.remove("hint"));const hint=game.hint();if(!hint){message.textContent="暂时没有可用移动。";return;}let selector;if(hint.from==="stock")selector="#stock";else if(hint.from==="waste")selector="#waste .card";else selector=`.pile[data-col="${hint.fromCol}"] .card[data-source*='\"start\":${hint.start}']`;const el=document.querySelector(selector);if(el)el.classList.add("hint");message.textContent=hint.to==="foundation"?"试试把高亮牌送到收集区。":hint.from==="stock"?"翻一张新牌。":"高亮牌可以继续移动。";setTimeout(()=>el&&el.classList.remove("hint"),1500);}
+      async function requestMode(mode){const api=hostApi();if(typeof api.requestDisplayMode!=="function"){message.textContent="当前 Codex 界面不支持切换显示模式。";return;}try{const available=Array.isArray(api.availableDisplayModes)?api.availableDisplayModes:null;if(available&&!available.includes(mode)){message.textContent="当前界面不支持该显示模式。";return;}await api.requestDisplayMode({mode});}catch(_){message.textContent="显示模式切换未被接受。";}}
+      document.getElementById("newGame").onclick=newGame;document.getElementById("overlayAction").onclick=newGame;document.getElementById("undo").onclick=()=>{if(game.undo()){selected=null;timerPaused=false;message.textContent="已撤销一步。";render();}};document.getElementById("hint").onclick=showHint;document.getElementById("pip").onclick=()=>requestMode("pip");document.getElementById("fullscreen").onclick=()=>requestMode("fullscreen");
+      document.addEventListener("keydown",e=>{if((e.key==="z"||e.key==="Z")&&(e.metaKey||e.ctrlKey)){e.preventDefault();if(game.undo())render();}if(e.key==="n"||e.key==="N")newGame();if(e.key==="h"||e.key==="H")showHint();});
+      setInterval(()=>{if(!timerPaused)document.getElementById("time").textContent=formatTime(currentElapsed());},500);render();setTimeout(()=>atelier.focus({preventScroll:true}),100);
+    })();
+  </script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-GAME="${1:-both}"
+GAME="${1:-all}"
 
 case "$GAME" in
   brick|brick-breaker|codex-brick-breaker)
@@ -11,11 +11,15 @@ case "$GAME" in
   snake|codex-snake)
     PLUGINS=(codex-snake)
     ;;
-  both)
+  solitaire|cards|codex-solitaire)
+    PLUGINS=(codex-solitaire)
+    ;;
+  all|both)
     PLUGINS=(codex-brick-breaker codex-snake)
+    PLUGINS+=(codex-solitaire)
     ;;
   *)
-    echo "Usage: $0 [brick|snake|both]" >&2
+    echo "Usage: $0 [brick|snake|solitaire|all|both]" >&2
     exit 2
     ;;
 esac
@@ -34,4 +38,4 @@ for plugin in "${PLUGINS[@]}"; do
 done
 
 echo "Installed: ${PLUGINS[*]}"
-echo "Open a new Codex task and say: 打开打砖块 / 打开贪吃蛇"
+echo "Open a new Codex task and say: 打开打砖块 / 打开贪吃蛇 / 打开纸牌接龙"
