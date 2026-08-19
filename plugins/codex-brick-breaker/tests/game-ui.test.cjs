@@ -9,6 +9,7 @@ const {
   availableDisplayModes,
   supportsMode,
   modeFromDisplayModeResult,
+  shouldRequestDefaultFullscreen,
   teardownNotification,
 } = require("../mcp/game-ui.js");
 
@@ -55,6 +56,16 @@ test("result shape can use mode or displayMode", () => {
   assert.equal(modeFromDisplayModeResult({ displayMode: "pip" }), "pip");
   assert.equal(modeFromDisplayModeResult({ viewMode: "fullscreen" }), null);
   assert.equal(modeFromDisplayModeResult(undefined), null);
+});
+
+test("requests fullscreen once by default without overriding a later inline choice", () => {
+  const hostApi = {
+    requestDisplayMode() {},
+    availableDisplayModes: ["inline", "fullscreen"],
+  };
+  assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "inline", attempted: false }), true);
+  assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "inline", attempted: true }), false);
+  assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "fullscreen", attempted: false }), false);
 });
 
 test("normalizeDisplayMode trims and lowercases only", () => {

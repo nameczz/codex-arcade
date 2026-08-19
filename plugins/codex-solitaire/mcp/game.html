@@ -106,11 +106,11 @@
     (() => {
       "use strict";
       const { SolitaireGame, SUITS, SUIT_SYMBOLS, rankLabel } = window.SolitaireCore;
-      const { computeCardOffsets, hostDisplayMode, normalizeDisplayMode, supportsMode, teardownNotification } = window.SolitaireUi;
+      const { computeCardOffsets, hostDisplayMode, normalizeDisplayMode, shouldRequestDefaultFullscreen, supportsMode, teardownNotification } = window.SolitaireUi;
       const game = new SolitaireGame();
       const atelier = document.getElementById("atelier"), tableauEl = document.getElementById("tableau"), stockEl = document.getElementById("stock"), wasteEl = document.getElementById("waste");
       const message = document.getElementById("message"), overlay = document.getElementById("overlay"), inlineButton = document.getElementById("inline"), fullscreenButton = document.getElementById("fullscreen"), closeButton = document.getElementById("close");
-      let selected = null, startedAt = Date.now(), timerPaused = false, elapsedBefore = 0, dragSource = null, displayModeState = "inline", resizeRaf = 0, gameClosed = false;
+      let selected = null, startedAt = Date.now(), timerPaused = false, elapsedBefore = 0, dragSource = null, displayModeState = "inline", defaultFullscreenHandled = false, resizeRaf = 0, gameClosed = false;
       function hostApi() { return window.openai || {}; }
       function currentDisplayMode() { return displayModeState; }
       function syncDisplayModeFromHost() { const hostMode=hostDisplayMode(hostApi());if(hostMode)displayModeState=hostMode; }
@@ -143,13 +143,14 @@
       function newGame(){game.newGame();selected=null;elapsedBefore=0;startedAt=Date.now();timerPaused=false;message.textContent="新牌已发好。祝你好运。";render();}
       function showHint(){document.querySelectorAll(".hint").forEach(el=>el.classList.remove("hint"));const hint=game.hint();if(!hint){message.textContent="暂时没有可用移动。";return;}let selector;if(hint.from==="stock")selector="#stock";else if(hint.from==="waste")selector="#waste .card";else selector=`.pile[data-col="${hint.fromCol}"] .card[data-source*='\"start\":${hint.start}']`;const el=document.querySelector(selector);if(el)el.classList.add("hint");message.textContent=hint.to==="foundation"?"试试把高亮牌送到收集区。":hint.from==="stock"?"翻一张新牌。":"高亮牌可以继续移动。";setTimeout(()=>el&&el.classList.remove("hint"),1500);}
       async function requestMode(mode){const target=normalizeDisplayMode(mode);const api=hostApi();if(!target||typeof api.requestDisplayMode!=="function"){message.textContent="当前 Codex 界面不支持切换显示模式。";return;}if(target!=="inline"&&!supportsMode(target,api)){message.textContent="当前界面不支持该显示模式。";return;}try{await api.requestDisplayMode({mode:target});displayModeState=target;syncModeUi();scheduleRender();message.textContent=target==="fullscreen"?"已切换到大窗。":"已返回小窗。";}catch(_){message.textContent="显示模式切换未被接受。";}}
+      async function requestDefaultFullscreen(){if(defaultFullscreenHandled||gameClosed)return false;syncDisplayModeFromHost();if(currentDisplayMode()==="fullscreen"){defaultFullscreenHandled=true;return true;}const api=hostApi();if(!shouldRequestDefaultFullscreen({hostApi:api,currentMode:currentDisplayMode(),attempted:defaultFullscreenHandled}))return false;defaultFullscreenHandled=true;await requestMode("fullscreen");return true;}
       function scheduleRender(){if(resizeRaf)return;resizeRaf=requestAnimationFrame(()=>{resizeRaf=0;render();});}
       function collapseGameView(){atelier.hidden=true;document.documentElement.style.cssText+=";height:0;min-height:0;overflow:hidden";document.body.style.cssText+=";height:0;min-height:0;padding:0;overflow:hidden";}
       function requestGameClose(){if(gameClosed)return;gameClosed=true;timerPaused=true;const api=hostApi();const fallback=()=>{window.parent.postMessage(teardownNotification(),"*");window.parent.postMessage({jsonrpc:"2.0",method:"ui/notifications/size-changed",params:{height:0}},"*");};const close=api.requestTeardown||api.requestClose||api.closeWidget||api.dismissWidget;if(typeof close==="function"){try{Promise.resolve(close.call(api,{})).catch(fallback);}catch(_){fallback();}}else fallback();collapseGameView();}
       document.getElementById("newGame").onclick=newGame;document.getElementById("overlayAction").onclick=newGame;document.getElementById("undo").onclick=()=>{if(game.undo()){selected=null;timerPaused=false;message.textContent="已撤销一步。";render();}};document.getElementById("hint").onclick=showHint;inlineButton.onclick=()=>requestMode("inline");fullscreenButton.onclick=()=>requestMode("fullscreen");closeButton.onclick=requestGameClose;
       document.addEventListener("keydown",e=>{if(e.key==="Escape"&&currentDisplayMode()!=="inline"){requestMode("inline");return;}if((e.key==="z"||e.key==="Z")&&(e.metaKey||e.ctrlKey)){e.preventDefault();if(game.undo())render();}if(e.key==="n"||e.key==="N")newGame();if(e.key==="h"||e.key==="H")showHint();});
-      window.addEventListener("resize",scheduleRender);if(window.visualViewport)window.visualViewport.addEventListener("resize",scheduleRender);window.addEventListener("focus",()=>{syncDisplayModeFromHost();syncModeUi();scheduleRender();});window.addEventListener("openai:set_globals",()=>{syncDisplayModeFromHost();syncModeUi();scheduleRender();});
-      setInterval(()=>{if(!timerPaused)document.getElementById("time").textContent=formatTime(currentElapsed());},500);syncDisplayModeFromHost();syncModeUi();render();setTimeout(()=>atelier.focus({preventScroll:true}),100);
+      window.addEventListener("resize",scheduleRender);if(window.visualViewport)window.visualViewport.addEventListener("resize",scheduleRender);window.addEventListener("focus",()=>{syncDisplayModeFromHost();syncModeUi();scheduleRender();});window.addEventListener("openai:set_globals",()=>{syncDisplayModeFromHost();syncModeUi();scheduleRender();requestDefaultFullscreen();});
+      setInterval(()=>{if(!timerPaused)document.getElementById("time").textContent=formatTime(currentElapsed());},500);syncDisplayModeFromHost();syncModeUi();render();requestDefaultFullscreen();setTimeout(()=>atelier.focus({preventScroll:true}),100);
     })();
   </script>
 </body>

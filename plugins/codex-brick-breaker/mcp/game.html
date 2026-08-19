@@ -114,6 +114,7 @@
         hostDisplayMode,
         supportsMode,
         modeFromDisplayModeResult,
+        shouldRequestDefaultFullscreen,
         teardownNotification,
       } = window.BrickBreakerUi;
       const canvas = document.getElementById("game");
@@ -138,6 +139,7 @@
       let lastSavedBest = game.bestScore;
       let layoutRaf = 0;
       let displayModeState = "inline";
+      let defaultFullscreenHandled = false;
       let gameClosed = false;
 
       function hostApi() { return window.openai || {}; }
@@ -369,6 +371,18 @@
         applyModeUi();
         return false;
       }
+      async function requestDefaultFullscreen() {
+        if (defaultFullscreenHandled || gameClosed) return false;
+        syncDisplayModeFromHost();
+        if (currentDisplayMode() === "fullscreen") {
+          defaultFullscreenHandled = true;
+          return true;
+        }
+        const api = hostApi();
+        if (!shouldRequestDefaultFullscreen({ hostApi: api, currentMode: currentDisplayMode(), attempted: defaultFullscreenHandled })) return false;
+        defaultFullscreenHandled = true;
+        return requestDisplayMode("fullscreen");
+      }
       async function onFullscreenButton() {
         const current = currentDisplayMode();
         await requestDisplayMode(current === "fullscreen" ? "inline" : "fullscreen");
@@ -445,8 +459,10 @@
       const refreshModeUi = () => {
         syncDisplayModeFromHost();
         applyModeUi();
+        requestDefaultFullscreen();
       };
       window.addEventListener("focus", refreshModeUi);
+      window.addEventListener("openai:set_globals", refreshModeUi);
       window.addEventListener("visibilitychange", () => {
         refreshModeUi();
         scheduleLayout();
@@ -456,6 +472,7 @@
       syncDisplayModeFromHost();
       applyCanvasLayout();
       applyModeUi();
+      requestDefaultFullscreen();
     })();
   </script>
 </body>

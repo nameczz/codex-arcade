@@ -37,6 +37,13 @@
       || normalizeDisplayMode(hostApi.hostContext && hostApi.hostContext.displayMode)
       || normalizeDisplayMode(hostApi.host && hostApi.host.displayMode);
   }
+  function shouldRequestDefaultFullscreen(options = {}) {
+    const hostApi = options.hostApi || {};
+    return options.attempted !== true
+      && normalizeDisplayMode(options.currentMode) !== "fullscreen"
+      && typeof hostApi.requestDisplayMode === "function"
+      && supportsMode("fullscreen", hostApi);
+  }
   function computeCardOffsets(faceUpCards, availableHeight, cardHeight, compact = false) {
     const cards = Array.isArray(faceUpCards) ? faceUpCards : [];
     if (!cards.length) return [];
@@ -57,5 +64,5 @@
   function teardownNotification() {
     return { jsonrpc: "2.0", method: "ui/notifications/request-teardown", params: {} };
   }
-  return { normalizeDisplayMode, availableDisplayModes, supportsMode, hostDisplayMode, computeCardOffsets, teardownNotification };
+  return { normalizeDisplayMode, availableDisplayModes, supportsMode, hostDisplayMode, shouldRequestDefaultFullscreen, computeCardOffsets, teardownNotification };
 });

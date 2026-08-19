@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 const {
   computeSquareLayout,
   normalizeDisplayMode,
+  shouldRequestDefaultFullscreen,
   teardownNotification,
 } = require("../mcp/game-ui.js");
 
@@ -39,4 +40,15 @@ test("display and close helpers use host protocol values", () => {
     method: "ui/notifications/request-teardown",
     params: {},
   });
+});
+
+test("requests fullscreen once by default without overriding a later small-window choice", () => {
+  const hostApi = {
+    requestDisplayMode() {},
+    availableDisplayModes: ["inline", "fullscreen"],
+  };
+  assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "inline", attempted: false }), true);
+  assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "inline", attempted: true }), false);
+  assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "fullscreen", attempted: false }), false);
+  assert.equal(shouldRequestDefaultFullscreen({ hostApi: {}, currentMode: "inline", attempted: false }), false);
 });

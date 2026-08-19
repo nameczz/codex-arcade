@@ -53,6 +53,14 @@
     return normalizeDisplayMode(result.mode || result.displayMode);
   }
 
+  function shouldRequestDefaultFullscreen(options = {}) {
+    const hostApi = options.hostApi || {};
+    return options.attempted !== true
+      && normalizeDisplayMode(options.currentMode) !== "fullscreen"
+      && typeof hostApi.requestDisplayMode === "function"
+      && supportsMode("fullscreen", hostApi);
+  }
+
   function teardownNotification() {
     return { jsonrpc: "2.0", method: "ui/notifications/request-teardown", params: {} };
   }
@@ -101,6 +109,7 @@
     supportsMode,
     hostDisplayMode,
     modeFromDisplayModeResult,
+    shouldRequestDefaultFullscreen,
     teardownNotification,
     computeInlineLayout,
   };

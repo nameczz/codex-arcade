@@ -218,7 +218,7 @@
     (() => {
       "use strict";
       const { SnakeGame } = window.SnakeGameCore;
-      const { computeSquareLayout, hostDisplayMode, modeFromDisplayModeResult, normalizeDisplayMode, supportsMode, teardownNotification } = window.SnakeUi;
+      const { computeSquareLayout, hostDisplayMode, modeFromDisplayModeResult, normalizeDisplayMode, shouldRequestDefaultFullscreen, supportsMode, teardownNotification } = window.SnakeUi;
       const game = new SnakeGame({ cols: 19, rows: 19 });
       const shell = document.getElementById("gameShell");
       const main = shell.querySelector(".main");
@@ -244,6 +244,7 @@
       let touchStart = null;
       let layoutRaf = 0;
       let displayModeState = "inline";
+      let defaultFullscreenHandled = false;
       let gameClosed = false;
 
       function hostApi() { return window.openai || {}; }
@@ -364,6 +365,18 @@
           const result=await api.requestDisplayMode({mode:target});displayModeState=modeFromDisplayModeResult(result)||target;syncModeUi();scheduleLayout();statusEl.textContent=target==="fullscreen"?"已切换到大窗。":"已返回小窗。";return true;
         } catch (_) { statusEl.textContent = "显示模式切换未被当前界面接受。";return false; }
       }
+      async function requestDefaultFullscreen() {
+        if (defaultFullscreenHandled || gameClosed) return false;
+        syncDisplayModeFromHost();
+        if (currentDisplayMode() === "fullscreen") {
+          defaultFullscreenHandled = true;
+          return true;
+        }
+        const api = hostApi();
+        if (!shouldRequestDefaultFullscreen({ hostApi: api, currentMode: currentDisplayMode(), attempted: defaultFullscreenHandled })) return false;
+        defaultFullscreenHandled = true;
+        return requestMode("fullscreen");
+      }
       function collapseGameView(){shell.hidden=true;document.documentElement.style.cssText+=";height:0;min-height:0;overflow:hidden";document.body.style.cssText+=";height:0;min-height:0;padding:0;overflow:hidden";}
       function requestGameClose(){if(gameClosed)return;gameClosed=true;clearTimeout(timer);const api=hostApi();const fallback=()=>{window.parent.postMessage(teardownNotification(),"*");window.parent.postMessage({jsonrpc:"2.0",method:"ui/notifications/size-changed",params:{height:0}},"*");};const close=api.requestTeardown||api.requestClose||api.closeWidget||api.dismissWidget;if(typeof close==="function"){try{Promise.resolve(close.call(api,{})).catch(fallback);}catch(_){fallback();}}else fallback();collapseGameView();}
       const keyDirection = { ArrowUp:"up", w:"up", W:"up", ArrowDown:"down", s:"down", S:"down", ArrowLeft:"left", a:"left", A:"left", ArrowRight:"right", d:"right", D:"right" };
@@ -387,8 +400,8 @@
         if (Math.max(Math.abs(dx),Math.abs(dy)) < 18) return;
         turn(Math.abs(dx)>Math.abs(dy) ? (dx>0?"right":"left") : (dy>0?"down":"up"));
       });
-      window.addEventListener("resize",scheduleLayout);if(window.visualViewport)window.visualViewport.addEventListener("resize",scheduleLayout);window.addEventListener("focus",()=>{syncDisplayModeFromHost();syncModeUi();scheduleLayout();});window.addEventListener("openai:set_globals",()=>{syncDisplayModeFromHost();syncModeUi();scheduleLayout();});if(typeof ResizeObserver!=="undefined")new ResizeObserver(scheduleLayout).observe(shell);
-      syncDisplayModeFromHost();syncModeUi();frame();applyBoardLayout();schedule();setTimeout(() => shell.focus({ preventScroll: true }), 100);
+      window.addEventListener("resize",scheduleLayout);if(window.visualViewport)window.visualViewport.addEventListener("resize",scheduleLayout);window.addEventListener("focus",()=>{syncDisplayModeFromHost();syncModeUi();scheduleLayout();});window.addEventListener("openai:set_globals",()=>{syncDisplayModeFromHost();syncModeUi();scheduleLayout();requestDefaultFullscreen();});if(typeof ResizeObserver!=="undefined")new ResizeObserver(scheduleLayout).observe(shell);
+      syncDisplayModeFromHost();syncModeUi();frame();applyBoardLayout();schedule();requestDefaultFullscreen();setTimeout(() => shell.focus({ preventScroll: true }), 100);
     })();
   </script>
 </body>

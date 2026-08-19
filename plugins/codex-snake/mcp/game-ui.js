@@ -51,6 +51,14 @@
     return normalizeDisplayMode(result.mode || result.displayMode);
   }
 
+  function shouldRequestDefaultFullscreen(options = {}) {
+    const hostApi = options.hostApi || {};
+    return options.attempted !== true
+      && normalizeDisplayMode(options.currentMode) !== "fullscreen"
+      && typeof hostApi.requestDisplayMode === "function"
+      && supportsMode("fullscreen", hostApi);
+  }
+
   function computeSquareLayout(options = {}) {
     const availableWidth = Math.max(1, Math.floor(Number(options.availableWidth) || 0));
     const availableHeight = Math.max(1, Math.floor(Number(options.availableHeight) || 0));
@@ -76,6 +84,7 @@
     supportsMode,
     hostDisplayMode,
     modeFromDisplayModeResult,
+    shouldRequestDefaultFullscreen,
     computeSquareLayout,
     teardownNotification,
   };

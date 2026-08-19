@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { computeCardOffsets, hostDisplayMode, normalizeDisplayMode, supportsMode, teardownNotification } = require("../mcp/game-ui.js");
+const { computeCardOffsets, hostDisplayMode, normalizeDisplayMode, shouldRequestDefaultFullscreen, supportsMode, teardownNotification } = require("../mcp/game-ui.js");
 test("close control emits the MCP Apps teardown notification", () => {
   assert.deepEqual(teardownNotification(), { jsonrpc: "2.0", method: "ui/notifications/request-teardown", params: {} });
 });
@@ -22,4 +22,13 @@ test("display helpers recognize inline mode and supported host modes", () => {
   assert.equal(hostDisplayMode({ view: { displayMode: "inline" } }), "inline");
   assert.equal(supportsMode("fullscreen", { availableDisplayModes: ["inline", "fullscreen"] }), true);
   assert.equal(supportsMode("pip", { availableDisplayModes: ["inline", "fullscreen"] }), false);
+});
+test("requests fullscreen once by default without overriding a later inline choice", () => {
+  const hostApi = {
+    requestDisplayMode() {},
+    availableDisplayModes: ["inline", "fullscreen"],
+  };
+  assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "inline", attempted: false }), true);
+  assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "inline", attempted: true }), false);
+  assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "fullscreen", attempted: false }), false);
 });
