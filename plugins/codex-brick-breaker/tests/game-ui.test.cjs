@@ -10,6 +10,8 @@ const {
   supportsMode,
   modeFromDisplayModeResult,
   shouldRequestDefaultFullscreen,
+  preferredInlineHeight,
+  sizeChangedNotification,
   teardownNotification,
 } = require("../mcp/game-ui.js");
 
@@ -35,6 +37,29 @@ test("inline layout keeps game board visible within representative chat dimensio
   assert.equal(tight.width <= 360, true);
   assert.equal(tight.height <= 620 - 170 - 8, true);
   assert.equal(Math.abs(tight.width * 5 - tight.height * 4) <= 1, true);
+});
+
+test("wide short inline windows keep the board large enough to play", () => {
+  const preferredHeight = preferredInlineHeight(385);
+  const screenshotWindow = computeInlineLayout({
+    availableWidth: 1430,
+    availableHeight: preferredHeight,
+    chromeHeight: 155,
+    aspectWidth: 4,
+    aspectHeight: 5,
+    maxWidth: 720,
+    maxHeight: 720,
+  });
+  assert.equal(preferredHeight, 600);
+  assert.ok(screenshotWindow.width >= 280, `board width was only ${screenshotWindow.width}px`);
+});
+
+test("inline resize notification reports the preferred playable height", () => {
+  assert.deepEqual(sizeChangedNotification({ width: 720, height: preferredInlineHeight(385) }), {
+    jsonrpc: "2.0",
+    method: "ui/notifications/size-changed",
+    params: { width: 720, height: 600 },
+  });
 });
 
 test("display mode helpers are strict and host-only", () => {

@@ -5,7 +5,9 @@ const assert = require("node:assert/strict");
 const {
   computeSquareLayout,
   normalizeDisplayMode,
+  preferredInlineHeight,
   shouldRequestDefaultFullscreen,
+  sizeChangedNotification,
   teardownNotification,
 } = require("../mcp/game-ui.js");
 
@@ -51,4 +53,13 @@ test("requests fullscreen once by default without overriding a later small-windo
   assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "inline", attempted: true }), false);
   assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "fullscreen", attempted: false }), false);
   assert.equal(shouldRequestDefaultFullscreen({ hostApi: {}, currentMode: "inline", attempted: false }), false);
+});
+
+test("small windows request a playable minimum height", () => {
+  assert.equal(preferredInlineHeight(385), 600);
+  assert.deepEqual(sizeChangedNotification({ width: 760, height: preferredInlineHeight(385) }), {
+    jsonrpc: "2.0",
+    method: "ui/notifications/size-changed",
+    params: { width: 760, height: 600 },
+  });
 });

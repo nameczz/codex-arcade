@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { computeCardOffsets, hostDisplayMode, normalizeDisplayMode, shouldRequestDefaultFullscreen, supportsMode, teardownNotification } = require("../mcp/game-ui.js");
+const { computeCardOffsets, hostDisplayMode, normalizeDisplayMode, preferredInlineHeight, shouldRequestDefaultFullscreen, sizeChangedNotification, supportsMode, teardownNotification } = require("../mcp/game-ui.js");
 test("close control emits the MCP Apps teardown notification", () => {
   assert.deepEqual(teardownNotification(), { jsonrpc: "2.0", method: "ui/notifications/request-teardown", params: {} });
 });
@@ -31,4 +31,12 @@ test("requests fullscreen once by default without overriding a later inline choi
   assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "inline", attempted: false }), true);
   assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "inline", attempted: true }), false);
   assert.equal(shouldRequestDefaultFullscreen({ hostApi, currentMode: "fullscreen", attempted: false }), false);
+});
+test("inline tables request a playable minimum height", () => {
+  assert.equal(preferredInlineHeight(385), 600);
+  assert.deepEqual(sizeChangedNotification({ width: 820, height: preferredInlineHeight(385) }), {
+    jsonrpc: "2.0",
+    method: "ui/notifications/size-changed",
+    params: { width: 820, height: 600 },
+  });
 });

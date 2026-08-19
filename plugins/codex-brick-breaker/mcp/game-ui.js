@@ -8,6 +8,7 @@
   const ASPECT_WIDTH = 4;
   const ASPECT_HEIGHT = 5;
   const DISPLAY_MODES = Object.freeze(["inline", "fullscreen", "pip"]);
+  const INLINE_MIN_HEIGHT = 600;
   const LAYOUT_SAFETY_PADDING = 8;
 
   function clampValue(value, min, max) {
@@ -61,6 +62,20 @@
       && supportsMode("fullscreen", hostApi);
   }
 
+  function preferredInlineHeight(currentHeight) {
+    const current = Math.max(1, Math.floor(Number(currentHeight) || 0));
+    return Math.max(current, INLINE_MIN_HEIGHT);
+  }
+
+  function sizeChangedNotification(options = {}) {
+    const params = {};
+    const width = Math.floor(Number(options.width) || 0);
+    const height = Math.floor(Number(options.height) || 0);
+    if (options.width != null && width > 0) params.width = width;
+    if (options.height != null && height >= 0) params.height = height;
+    return { jsonrpc: "2.0", method: "ui/notifications/size-changed", params };
+  }
+
   function teardownNotification() {
     return { jsonrpc: "2.0", method: "ui/notifications/request-teardown", params: {} };
   }
@@ -103,6 +118,7 @@
   return {
     ASPECT_WIDTH,
     ASPECT_HEIGHT,
+    INLINE_MIN_HEIGHT,
     clampValue,
     normalizeDisplayMode,
     availableDisplayModes,
@@ -110,6 +126,8 @@
     hostDisplayMode,
     modeFromDisplayModeResult,
     shouldRequestDefaultFullscreen,
+    preferredInlineHeight,
+    sizeChangedNotification,
     teardownNotification,
     computeInlineLayout,
   };

@@ -9,6 +9,7 @@
     * { box-sizing:border-box; }
     html,body { width:100%; height:100%; min-height:0; margin:0; overflow:hidden; background:transparent; }
     body { height:100dvh; padding:7px; color:var(--cream); font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif; }
+    body.inline-mode { height:max(100dvh,600px); min-height:600px; }
     button { font:inherit; }
     .atelier { width:min(100%,820px); height:100%; max-height:100%; margin:auto; display:flex; flex-direction:column; overflow:hidden; border-radius:24px; border:1px solid rgba(255,255,255,.14); background:#0b211d; box-shadow:0 24px 60px rgba(0,0,0,.45); outline:none; }
     .bar { min-height:64px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; background:#102a25; border-bottom:1px solid rgba(255,255,255,.09); }
@@ -106,7 +107,7 @@
     (() => {
       "use strict";
       const { SolitaireGame, SUITS, SUIT_SYMBOLS, rankLabel } = window.SolitaireCore;
-      const { computeCardOffsets, hostDisplayMode, normalizeDisplayMode, shouldRequestDefaultFullscreen, supportsMode, teardownNotification } = window.SolitaireUi;
+      const { computeCardOffsets, hostDisplayMode, normalizeDisplayMode, preferredInlineHeight, shouldRequestDefaultFullscreen, sizeChangedNotification, supportsMode, teardownNotification } = window.SolitaireUi;
       const game = new SolitaireGame();
       const atelier = document.getElementById("atelier"), tableauEl = document.getElementById("tableau"), stockEl = document.getElementById("stock"), wasteEl = document.getElementById("waste");
       const message = document.getElementById("message"), overlay = document.getElementById("overlay"), inlineButton = document.getElementById("inline"), fullscreenButton = document.getElementById("fullscreen"), closeButton = document.getElementById("close");
@@ -114,7 +115,8 @@
       function hostApi() { return window.openai || {}; }
       function currentDisplayMode() { return displayModeState; }
       function syncDisplayModeFromHost() { const hostMode=hostDisplayMode(hostApi());if(hostMode)displayModeState=hostMode; }
-      function syncModeUi() { const mode=currentDisplayMode();inlineButton.disabled=mode==="inline";fullscreenButton.disabled=mode==="fullscreen"||!supportsMode("fullscreen",hostApi()); }
+      function syncModeUi() { const mode=currentDisplayMode();document.body.classList.toggle("inline-mode",mode==="inline");inlineButton.disabled=mode==="inline";fullscreenButton.disabled=mode==="fullscreen"||!supportsMode("fullscreen",hostApi());if(mode==="inline")notifyInlineSize(); }
+      function notifyInlineSize(){const viewport=window.visualViewport||window;const height=preferredInlineHeight(Number(viewport.height)||innerHeight||0);requestAnimationFrame(()=>{if(currentDisplayMode()!=="inline"||gameClosed)return;window.parent.postMessage(sizeChangedNotification({height}),"*");});}
       function sourceKey(source) { return source ? `${source.type}:${source.col ?? source.suit ?? ""}:${source.start ?? ""}` : ""; }
       function cardHtml(card, source, top, z) {
         const el = document.createElement("button"); el.type="button"; el.className=`card ${card.faceUp ? `face ${card.color}` : "back"}`; el.style.zIndex=String(z); el.dataset.source=JSON.stringify(source); el.setAttribute("aria-label",card.faceUp?`${rankLabel(card.rank)} ${SUIT_SYMBOLS[card.suit]}`:"未翻开的牌");

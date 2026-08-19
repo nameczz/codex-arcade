@@ -6,6 +6,7 @@
   "use strict";
 
   const DISPLAY_MODES = Object.freeze(["inline", "fullscreen", "pip"]);
+  const INLINE_MIN_HEIGHT = 600;
   const LAYOUT_SAFETY_PADDING = 8;
 
   function normalizeDisplayMode(value) {
@@ -59,6 +60,20 @@
       && supportsMode("fullscreen", hostApi);
   }
 
+  function preferredInlineHeight(currentHeight) {
+    const current = Math.max(1, Math.floor(Number(currentHeight) || 0));
+    return Math.max(current, INLINE_MIN_HEIGHT);
+  }
+
+  function sizeChangedNotification(options = {}) {
+    const params = {};
+    const width = Math.floor(Number(options.width) || 0);
+    const height = Math.floor(Number(options.height) || 0);
+    if (options.width != null && width > 0) params.width = width;
+    if (options.height != null && height >= 0) params.height = height;
+    return { jsonrpc: "2.0", method: "ui/notifications/size-changed", params };
+  }
+
   function computeSquareLayout(options = {}) {
     const availableWidth = Math.max(1, Math.floor(Number(options.availableWidth) || 0));
     const availableHeight = Math.max(1, Math.floor(Number(options.availableHeight) || 0));
@@ -85,6 +100,8 @@
     hostDisplayMode,
     modeFromDisplayModeResult,
     shouldRequestDefaultFullscreen,
+    preferredInlineHeight,
+    sizeChangedNotification,
     computeSquareLayout,
     teardownNotification,
   };

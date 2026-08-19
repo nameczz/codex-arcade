@@ -23,6 +23,7 @@
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; min-height: 0; margin: 0; overflow: hidden; background: transparent; font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif; }
     body { height: 100dvh; padding: 10px; color: var(--cream); }
+    body.inline-mode { height: max(100dvh, 600px); min-height: 600px; }
     button { font: inherit; }
     .game-shell {
       width: min(100%, 760px);
@@ -218,7 +219,7 @@
     (() => {
       "use strict";
       const { SnakeGame } = window.SnakeGameCore;
-      const { computeSquareLayout, hostDisplayMode, modeFromDisplayModeResult, normalizeDisplayMode, shouldRequestDefaultFullscreen, supportsMode, teardownNotification } = window.SnakeUi;
+      const { computeSquareLayout, hostDisplayMode, modeFromDisplayModeResult, normalizeDisplayMode, preferredInlineHeight, shouldRequestDefaultFullscreen, sizeChangedNotification, supportsMode, teardownNotification } = window.SnakeUi;
       const game = new SnakeGame({ cols: 19, rows: 19 });
       const shell = document.getElementById("gameShell");
       const main = shell.querySelector(".main");
@@ -250,11 +251,13 @@
       function hostApi() { return window.openai || {}; }
       function currentDisplayMode() { return displayModeState; }
       function syncDisplayModeFromHost() { const mode=hostDisplayMode(hostApi());if(mode)displayModeState=mode; }
-      function syncModeUi() { const mode=currentDisplayMode();inlineButton.disabled=mode==="inline";fullscreenButton.disabled=mode==="fullscreen"||!supportsMode("fullscreen",hostApi()); }
+      function syncModeUi() { const mode=currentDisplayMode();document.body.classList.toggle("inline-mode",mode==="inline");inlineButton.disabled=mode==="inline";fullscreenButton.disabled=mode==="fullscreen"||!supportsMode("fullscreen",hostApi());if(mode==="inline")notifyInlineSize(); }
+      function notifyInlineSize() { const viewport=window.visualViewport||window;const height=preferredInlineHeight(Number(viewport.height)||innerHeight||0);requestAnimationFrame(()=>{if(currentDisplayMode()!=="inline"||gameClosed)return;window.parent.postMessage(sizeChangedNotification({height}),"*");}); }
       function applyBoardLayout() {
         if (gameClosed) return;
         const viewport = window.visualViewport || window;
-        const viewportHeight = Math.max(1, Math.floor(Number(viewport.height) || innerHeight || document.documentElement.clientHeight || 0));
+        const rawViewportHeight = Math.max(1, Math.floor(Number(viewport.height) || innerHeight || document.documentElement.clientHeight || 0));
+        const viewportHeight = currentDisplayMode() === "inline" ? preferredInlineHeight(rawViewportHeight) : rawViewportHeight;
         const stacked = innerWidth <= 610;
         const mainStyle = getComputedStyle(main);
         const horizontalPadding = parseFloat(mainStyle.paddingLeft) + parseFloat(mainStyle.paddingRight);

@@ -20,6 +20,7 @@
     * { box-sizing: border-box; }
     html, body { min-height: 100%; margin: 0; background: transparent; }
     body { padding: 8px; color: var(--paper); font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace; }
+    body.inline-mode { min-height: 600px; }
     button { font: inherit; }
     .cabinet {
       width: min(100%, 720px); margin: 0 auto; overflow: hidden; border: 1px solid #343b5e; border-radius: 22px;
@@ -114,7 +115,9 @@
         hostDisplayMode,
         supportsMode,
         modeFromDisplayModeResult,
+        preferredInlineHeight,
         shouldRequestDefaultFullscreen,
+        sizeChangedNotification,
         teardownNotification,
       } = window.BrickBreakerUi;
       const canvas = document.getElementById("game");
@@ -166,10 +169,13 @@
           return;
         }
         const viewport = window.visualViewport || window;
-        const viewportHeight = Math.max(
+        const rawViewportHeight = Math.max(
           1,
           Math.floor(Number(viewport.height) || window.innerHeight || document.documentElement.clientHeight || 0),
         );
+        const viewportHeight = currentDisplayMode() === "inline"
+          ? preferredInlineHeight(rawViewportHeight)
+          : rawViewportHeight;
         const availableWidth = Math.max(1, Math.floor(cabinet.clientWidth || 0));
         const topOffset = Math.max(0, Math.floor(cabinet.getBoundingClientRect().top));
         const chromeHeight = Math.max(0, Math.round((topTools ? topTools.getBoundingClientRect().height : 0)
@@ -202,8 +208,18 @@
       function applyModeUi(mode) {
         const effectiveMode = normalizeHostMode(mode || currentDisplayMode());
         const canFullscreen = hasMode("fullscreen");
+        document.body.classList.toggle("inline-mode", effectiveMode === "inline");
         inlineButton.disabled = effectiveMode === "inline";
         fullscreenButton.disabled = effectiveMode === "fullscreen" || !canFullscreen;
+        if (effectiveMode === "inline") notifyInlineSize();
+      }
+      function notifyInlineSize() {
+        const viewport = window.visualViewport || window;
+        const height = preferredInlineHeight(Number(viewport.height) || window.innerHeight || 0);
+        requestAnimationFrame(() => {
+          if (currentDisplayMode() !== "inline" || gameClosed) return;
+          window.parent.postMessage(sizeChangedNotification({ height }), "*");
+        });
       }
       function statusForMode(mode) {
         if (mode === "fullscreen") return "已请求全屏。";

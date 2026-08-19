@@ -5,6 +5,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function makeSolitaireUi() {
   "use strict";
   const DISPLAY_MODES = Object.freeze(["inline", "fullscreen", "pip"]);
+  const INLINE_MIN_HEIGHT = 600;
   function normalizeDisplayMode(value) {
     if (typeof value !== "string") return null;
     const mode = value.toLowerCase();
@@ -44,6 +45,18 @@
       && typeof hostApi.requestDisplayMode === "function"
       && supportsMode("fullscreen", hostApi);
   }
+  function preferredInlineHeight(currentHeight) {
+    const current = Math.max(1, Math.floor(Number(currentHeight) || 0));
+    return Math.max(current, INLINE_MIN_HEIGHT);
+  }
+  function sizeChangedNotification(options = {}) {
+    const params = {};
+    const width = Math.floor(Number(options.width) || 0);
+    const height = Math.floor(Number(options.height) || 0);
+    if (options.width != null && width > 0) params.width = width;
+    if (options.height != null && height >= 0) params.height = height;
+    return { jsonrpc: "2.0", method: "ui/notifications/size-changed", params };
+  }
   function computeCardOffsets(faceUpCards, availableHeight, cardHeight, compact = false) {
     const cards = Array.isArray(faceUpCards) ? faceUpCards : [];
     if (!cards.length) return [];
@@ -64,5 +77,5 @@
   function teardownNotification() {
     return { jsonrpc: "2.0", method: "ui/notifications/request-teardown", params: {} };
   }
-  return { normalizeDisplayMode, availableDisplayModes, supportsMode, hostDisplayMode, shouldRequestDefaultFullscreen, computeCardOffsets, teardownNotification };
+  return { normalizeDisplayMode, availableDisplayModes, supportsMode, hostDisplayMode, shouldRequestDefaultFullscreen, preferredInlineHeight, sizeChangedNotification, computeCardOffsets, teardownNotification };
 });
