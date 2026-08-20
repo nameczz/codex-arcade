@@ -6,9 +6,13 @@ const readline = require("node:readline");
 
 const ROOT = path.resolve(__dirname, "..");
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, ".codex-plugin", "plugin.json"), "utf8"));
-const VERSION = manifest.version || "0.1.0";
 const MIME_TYPE = "text/html;profile=mcp-app";
-const RESOURCE_URI = `ui://codex-snake/game-${encodeURIComponent(VERSION)}.html`;
+const VERSION = manifest.version || "0.1.0";
+const RESOURCE_URI = "ui://codex-snake/game.html";
+const LEGACY_RESOURCE_URIS = new Set([
+  "ui://codex-snake/game-0.1.0.html",
+  "ui://codex-snake/game-0.1.1.html",
+]);
 
 function assetDataUrl(name, mimeType) {
   return `data:${mimeType};base64,${fs.readFileSync(path.join(ROOT, "assets", name)).toString("base64")}`;
@@ -114,9 +118,11 @@ async function handleRpc(message) {
   }
   if (method === "resources/list") return rpcResult(id, { resources: resources() });
   if (method === "resources/read") {
-    if (params.uri !== RESOURCE_URI) return rpcError(id, -32602, `Unknown resource: ${String(params.uri)}`);
+    if (params.uri !== RESOURCE_URI && !LEGACY_RESOURCE_URIS.has(params.uri)) {
+      return rpcError(id, -32602, `Unknown resource: ${String(params.uri)}`);
+    }
     return rpcResult(id, {
-      contents: [{ uri: RESOURCE_URI, mimeType: MIME_TYPE, text: gameHtml(), _meta: resourceMeta() }],
+      contents: [{ uri: params.uri, mimeType: MIME_TYPE, text: gameHtml(), _meta: resourceMeta() }],
     });
   }
   if (method === "resources/templates/list") return rpcResult(id, { resourceTemplates: [] });

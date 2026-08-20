@@ -25,6 +25,17 @@ test("serves a self-contained MCP App HTML resource", async () => {
   assert.match(resource.text, /ui\/notifications\/request-teardown/);
 });
 
+test("keeps pre-0.1.2 resource URIs readable after an upgrade", async () => {
+  for (const uri of [
+    "ui://codex-snake/game-0.1.0.html",
+    "ui://codex-snake/game-0.1.1.html",
+  ]) {
+    const response = await server.handleRpc({ jsonrpc:"2.0", id:4, method:"resources/read", params:{ uri } });
+    assert.equal(response.result.contents[0].uri, uri);
+    assert.match(response.result.contents[0].text, /Codex Snake/);
+  }
+});
+
 test("tool call returns structured content and matching UI metadata", async () => {
   const response = await server.handleRpc({ jsonrpc:"2.0", id:3, method:"tools/call", params:{ name:"open_snake_game", arguments:{} } });
   assert.equal(response.result.isError, false);
