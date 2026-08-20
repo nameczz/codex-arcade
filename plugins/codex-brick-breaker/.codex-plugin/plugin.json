@@ -1,6 +1,6 @@
 {
   "name": "codex-brick-breaker",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "A polished, fully playable original Brick Breaker game for Codex.",
   "author": { "name": "Codex Arcade" },
   "license": "MIT",

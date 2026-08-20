@@ -1,11 +1,11 @@
 {
   "name": "codex-snake",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "description": "Dependency-free MCP App server for Codex Snake",
   "scripts": {
     "test": "node --test tests/*.test.cjs",
-    "check": "node --check mcp/server.cjs && node --check mcp/game-core.js"
+    "check": "node --check mcp/server.cjs && node --check mcp/game-core.js && node --check mcp/game-ui.js && npm test"
   },
   "license": "MIT"
 }

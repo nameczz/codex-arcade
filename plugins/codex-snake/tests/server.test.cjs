@@ -18,8 +18,22 @@ test("serves a self-contained MCP App HTML resource", async () => {
   assert.equal(resource.mimeType, "text/html;profile=mcp-app");
   assert.match(resource.text, /Codex Snake/);
   assert.match(resource.text, /class SnakeGame/);
-  assert.doesNotMatch(resource.text, /__SNAKE_ICON_DATA_URL__|__GAME_CORE__/);
+  assert.doesNotMatch(resource.text, /__SNAKE_ICON_DATA_URL__|__GAME_CORE__|__GAME_UI__/);
   assert.doesNotMatch(resource.text, /https?:\/\//);
+  assert.match(resource.text, /id="close"/);
+  assert.match(resource.text, /id="inline"/);
+  assert.match(resource.text, /ui\/notifications\/request-teardown/);
+});
+
+test("keeps pre-0.1.2 resource URIs readable after an upgrade", async () => {
+  for (const uri of [
+    "ui://codex-snake/game-0.1.0.html",
+    "ui://codex-snake/game-0.1.1.html",
+  ]) {
+    const response = await server.handleRpc({ jsonrpc:"2.0", id:4, method:"resources/read", params:{ uri } });
+    assert.equal(response.result.contents[0].uri, uri);
+    assert.match(response.result.contents[0].text, /Codex Snake/);
+  }
 });
 
 test("tool call returns structured content and matching UI metadata", async () => {
